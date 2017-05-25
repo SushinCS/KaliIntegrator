@@ -3,8 +3,17 @@
  */
 package burp;
 import java.io.*;
+import java.util.List;
 import java.awt.*;
 import javax.swing.*;
+import org.python.core.PyList;
+import org.python.core.PyString;
+import org.python.core.PySystemState;
+import org.python.util.PythonInterpreter;
+import org.python.core.PyException;
+import org.python.core.PyInteger;
+import org.python.core.PyObject;
+
 
 
 /**
@@ -25,6 +34,7 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	static int count=0;
 	String ehost="testphp.vulnweb.com";
 	IRequestInfo ereqinfo;
+	IRequestInfo ereqinfo1;
 	IHttpService eserv;
 	public JPanel eframe;
 	public JLabel elabel;
@@ -66,7 +76,7 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	@Override
 	public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
 		// TODO Auto-generated method stub
-		if (messageIsRequest==true)
+		/*if (messageIsRequest==true)
 		{
 			stdout.println("Number of Message received:"+(count++)+"Message issued by Tool:"+ecallbacks.getToolName(toolFlag));
 			ereqinfo=ehelpers.analyzeRequest(messageInfo);
@@ -83,6 +93,31 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 			{
 				stdout.println("Request is from :"+eserv.getHost());
 			}
+		}*/
+		if(messageIsRequest==true)
+		{
+			ereqinfo=ehelpers.analyzeRequest(messageInfo);
+			stdout.println(ereqinfo.getUrl());
+//			List<IParameter> eparamlist=ereqinfo.getParameters();
+//			for(int i = 0; i < eparamlist.size(); i++) {
+//	            stdout.println(eparamlist.get(i).getName());
+//	        }
+			stdout.println(ereqinfo.getHeaders());
+			IHttpRequestResponse ereqres[]=ecallbacks.getProxyHistory();
+			stdout.println("History Length"+ecallbacks.getProxyHistory().length);
+			for(IHttpRequestResponse  i:ereqres)
+			{
+				ereqinfo1=ehelpers.analyzeRequest(i);
+				stdout.println("History Contains "+ereqinfo1.getUrl());
+			}
+			for(IHttpRequestResponse  i:ereqres)
+			{  
+				ereqinfo1=ehelpers.analyzeRequest(i);
+			     if (ereqinfo1.getUrl()!= ereqinfo.getUrl())
+			     {
+			    	 stdout.println("Unique URL"+ereqinfo1.getUrl());
+			     }
+			   }  
 		}
 	}
 
