@@ -6,6 +6,8 @@ import java.io.*;
 import java.util.List;
 import java.awt.*;
 import javax.swing.*;
+import javax.swing.text.BadLocationException;
+
 import org.python.core.PyList;
 import org.python.core.PyString;
 import org.python.core.PySystemState;
@@ -36,6 +38,7 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	IRequestInfo ereqinfo;
 	IRequestInfo ereqinfo1;
 	IHttpService eserv;
+	public static Demo uiobj;
 	public JPanel eframe;
 	public JLabel elabel;
 	public JTextField etextfield;
@@ -45,7 +48,7 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 		// TODO Auto-generated method stub
 		this.ecallbacks=callbacks;
 		ecallbacks.setExtensionName("Extension1");
-		eframe=new JPanel();
+		/*eframe=new JPanel();
 		elabel=new JLabel("Statistics");
 		 elabel.setBounds(50,100,80,30);  
 		etextfield=new JTextField("Default Value is 0");
@@ -57,7 +60,14 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 		ecallbacks.customizeUiComponent(eframe);
 		ecallbacks.customizeUiComponent(elabel);
 		ecallbacks.customizeUiComponent(etextfield);
+		ecallbacks.addSuiteTab(this);*/
+		uiobj=new Demo();
+		ecallbacks.customizeUiComponent(uiobj);
 		ecallbacks.addSuiteTab(this);
+		
+		uiobj.append("ch1", "ch2");
+		
+		
 		this.ehelpers=ecallbacks.getHelpers();
 		stderr=new PrintWriter(ecallbacks.getStderr(), true);
 		stdout=new PrintWriter(ecallbacks.getStdout(), true);
@@ -164,7 +174,7 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	@Override
 	public Component getUiComponent() {
 		// TODO Auto-generated method stub
-		return eframe;
+		return uiobj;
 	}
 
 	@Override
@@ -192,6 +202,12 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	        // into a PyObject.
 	        PyObject output = interp.get("output");
 	        stdout.println("output is: " + output);
+	        stdout.println("URL Sent is: " + ereqinfo2.getUrl().toString());
+	        if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
+	        {
+	      
+	        	this.uiobj.append("haiiii", "Not Vulnerable");
+	        }
 	}
 
 }
