@@ -97,29 +97,51 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 		if(messageIsRequest==true)
 		{
 			ereqinfo=ehelpers.analyzeRequest(messageInfo);
-			stdout.println(ereqinfo.getUrl());
-//			List<IParameter> eparamlist=ereqinfo.getParameters();
-//			for(int i = 0; i < eparamlist.size(); i++) {
-//	            stdout.println(eparamlist.get(i).getName());
-//	        }
-			stdout.println(ereqinfo.getHeaders());
+			stdout.println("Received URL :"+ereqinfo.getUrl());
+			
+		//	stdout.println(ereqinfo.getHeaders());
 			IHttpRequestResponse ereqres[]=ecallbacks.getProxyHistory();
-			stdout.println("History Length"+ecallbacks.getProxyHistory().length);
+			stdout.println("History Length :"+ecallbacks.getProxyHistory().length);
 			for(IHttpRequestResponse  i:ereqres)
 			{
 				ereqinfo1=ehelpers.analyzeRequest(i);
-				stdout.println("History Contains "+ereqinfo1.getUrl());
+				stdout.println("History Contains :"+ereqinfo1.getUrl());
 			}
+			int cnt=0;
+			
 			for(IHttpRequestResponse  i:ereqres)
 			{  
 				ereqinfo1=ehelpers.analyzeRequest(i);
-			     if (ereqinfo1.getUrl()!= ereqinfo.getUrl())
+				stdout.println("Received URL:"+ereqinfo.getUrl());
+				stdout.println("Compared URL:"+ereqinfo1.getUrl());
+				stdout.println("compartision Status"+ereqinfo1.getUrl().equals(ereqinfo.getUrl()));
+			     if (ereqinfo1.getUrl().equals(ereqinfo.getUrl()))
 			     {
-			    	 stdout.println("Unique URL"+ereqinfo1.getUrl());
+			    	 cnt++;
+			    	 stdout.println("CNT value:"+cnt);
+			    	
 			     }
-			   }  
+			   } 
+			if(cnt==1)
+			{
+				stdout.println("Unique URL:"+ereqinfo.getUrl());
+				
+				List<IParameter> eparamlist=ereqinfo.getParameters();
+				stdout.println("Parameter Size"+eparamlist.size());
+				for(int j = 0; j < eparamlist.size(); j++) {
+		            stdout.println("Parameter in given URL are:"+eparamlist.get(j).getName());
+		        }
+				if(eparamlist.size()!=0)
+				{
+					stdout.println("Scanning the URL for LFI Vulnerability:");
+				this.kaliintegrator(ereqinfo);
+			}
+			}
+			stdout.println("\n\n");
 		}
+	
 	}
+
 
 	@Override
 	public byte[] getRequest() {
@@ -149,6 +171,27 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	public IHttpService getHttpService() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public void kaliintegrator(IRequestInfo ereqinfo2)
+	{
+		PythonInterpreter interp = new PythonInterpreter();
+		  interp.setOut(stdout); 
+		interp.exec("import sys");
+		 interp.exec("import os");
+		 interp.exec("import subprocess");
+		 interp.exec("import socket");
+		 String cmd1="fimap --url="+ereqinfo2.getUrl();
+		 stdout.println(cmd1);
+		 interp.set("output", new PyString());
+		 interp.set("cmd", cmd1);		 
+		 interp.exec("output += subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)");
+		 
+
+	        // Obtain the value of an object from the PythonInterpreter and store it
+	        // into a PyObject.
+	        PyObject output = interp.get("output");
+	        stdout.println("output is: " + output);
 	}
 
 }
