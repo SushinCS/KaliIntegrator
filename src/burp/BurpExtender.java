@@ -38,7 +38,7 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	IRequestInfo ereqinfo;
 	IRequestInfo ereqinfo1;
 	IHttpService eserv;
-	public static Demo uiobj;
+	public static KaliIntegratorUI1 kiui1=new KaliIntegratorUI1();
 	public JPanel eframe;
 	public JLabel elabel;
 	public JTextField etextfield;
@@ -61,12 +61,9 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 		ecallbacks.customizeUiComponent(elabel);
 		ecallbacks.customizeUiComponent(etextfield);
 		ecallbacks.addSuiteTab(this);*/
-		uiobj=new Demo();
-		ecallbacks.customizeUiComponent(uiobj);
-		ecallbacks.addSuiteTab(this);
 		
-		uiobj.append("ch1", "ch2");
-		
+		ecallbacks.customizeUiComponent(kiui1);
+		ecallbacks.addSuiteTab(this);	
 		
 		this.ehelpers=ecallbacks.getHelpers();
 		stderr=new PrintWriter(ecallbacks.getStderr(), true);
@@ -174,7 +171,7 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	@Override
 	public Component getUiComponent() {
 		// TODO Auto-generated method stub
-		return uiobj;
+		return kiui1;
 	}
 
 	@Override
@@ -185,9 +182,8 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	
 	public void kaliintegrator(IRequestInfo ereqinfo2)
 	{
-		PythonInterpreter interp = new PythonInterpreter();
-		  interp.setOut(stdout); 
-		interp.exec("import sys");
+		PythonInterpreter interp = new PythonInterpreter(); 
+		 interp.exec("import sys");
 		 interp.exec("import os");
 		 interp.exec("import subprocess");
 		 interp.exec("import socket");
@@ -196,18 +192,16 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 		 interp.set("output", new PyString());
 		 interp.set("cmd", cmd1);		 
 		 interp.exec("output += subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)");
-		 
-
-	        // Obtain the value of an object from the PythonInterpreter and store it
-	        // into a PyObject.
+		
 	        PyObject output = interp.get("output");
 	        stdout.println("output is: " + output);
 	        stdout.println("URL Sent is: " + ereqinfo2.getUrl().toString());
 	        if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
 	        {
-	      
-	        	this.uiobj.append("haiiii", "Not Vulnerable");
+	        	kiui1.append(ereqinfo2.getUrl().toString(),"Not Vulnerable");
 	        }
+	        interp.cleanup();
+	        interp.close();
 	}
 
 }
