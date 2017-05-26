@@ -195,10 +195,13 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 		
 	        PyObject output = interp.get("output");
 	        stdout.println("output is: " + output);
-	        stdout.println("URL Sent is: " + ereqinfo2.getUrl().toString());
 	        if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
 	        {
 	        	kiui1.append(ereqinfo2.getUrl().toString(),"Not Vulnerable");
+	        }
+	        else if (output.toString().contains("URL is Vulnerable"))
+	        {
+	        	kiui1.append(ereqinfo2.getUrl().toString(),"Vulnerable");
 	        }
 	        interp.cleanup();
 	        interp.close();

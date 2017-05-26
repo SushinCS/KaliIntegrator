@@ -31,30 +31,32 @@ public class KaliIntegratorUI1 extends JPanel {
 		urllabel.setBackground(Color.WHITE);
 		urllabel.setForeground(Color.BLUE);
 		urllabel.setHorizontalAlignment(SwingConstants.CENTER);
-		urllabel.setBounds(28, 27, 248, 28);
+		urllabel.setBounds(77, 27, 248, 28);
 		add(urllabel);
 		
 		statuslabel = new JLabel("Status");
 		statuslabel.setFont(UIManager.getFont("Label.font"));
 		statuslabel.setForeground(Color.BLUE);
 		statuslabel.setHorizontalAlignment(SwingConstants.CENTER);
-		statuslabel.setBounds(288, 27, 125, 28);
+		statuslabel.setBounds(391, 27, 125, 28);
 		add(statuslabel);
 		
 		scannedurllist = new JTextArea();
+		scannedurllist.setEnabled(false);
 		scannedurllist.setFont(UIManager.getFont("EditorPane.font"));
 		scannedurllist.setForeground(new Color(255, 140, 0));
 		scannedurllist.setToolTipText("Scanned Url List");
 		scannedurllist.setEditable(false);
-		scannedurllist.setBounds(49, 67, 198, 198);
+		scannedurllist.setBounds(49, 67, 307, 198);
 		add(scannedurllist);
 		
 		result = new JTextArea();
+		result.setEnabled(false);
 		result.setFont(UIManager.getFont("EditorPane.font"));
 		result.setForeground(new Color(0, 128, 0));
 		result.setToolTipText("Result");
 		result.setEditable(false);
-		result.setBounds(275, 67, 131, 198);
+		result.setBounds(385, 67, 131, 198);
 		add(result);
 		
 
