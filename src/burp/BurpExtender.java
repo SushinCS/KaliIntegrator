@@ -34,10 +34,13 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	PrintWriter stderr;
 	PrintWriter stdout;
 	static int count=0;
+	String param="";
+	String cparam="";
 	String ehost="testphp.vulnweb.com";
 	IRequestInfo ereqinfo;
 	IRequestInfo ereqinfo1;
 	IHttpService eserv;
+	
 	public static KaliIntegratorUI1 kiui1=new KaliIntegratorUI1();
 	public JPanel eframe;
 	public JLabel elabel;
@@ -101,14 +104,16 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 				stdout.println("Request is from :"+eserv.getHost());
 			}
 		}*/
+		
 		if(messageIsRequest==true)
 		{
 			ereqinfo=ehelpers.analyzeRequest(messageInfo);
-			stdout.println("Received URL :"+ereqinfo.getUrl());
+			
+		//stdout.println("Received URL :"+ereqinfo.getUrl());
 			
 		//	stdout.println(ereqinfo.getHeaders());
 			IHttpRequestResponse ereqres[]=ecallbacks.getProxyHistory();
-			stdout.println("History Length :"+ecallbacks.getProxyHistory().length);
+		//	stdout.println("History Length :"+ecallbacks.getProxyHistory().length);
 			for(IHttpRequestResponse  i:ereqres)
 			{
 				ereqinfo1=ehelpers.analyzeRequest(i);
@@ -136,12 +141,26 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 				List<IParameter> eparamlist=ereqinfo.getParameters();
 				stdout.println("Parameter Size"+eparamlist.size());
 				for(int j = 0; j < eparamlist.size(); j++) {
-		            stdout.println("Parameter in given URL are:"+eparamlist.get(j).getName());
+					
+					if(eparamlist.get(j).getType()==2)
+					{
+						if(cparam.contains(eparamlist.get(j).getName())!=true)
+						{ stdout.println("Cookie in given URL are:"+eparamlist.get(j).getName());
+		            cparam=cparam.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
+		            stdout.println("cookie List"+cparam);}
+					}
+					else
+					{ if(eparamlist.get(j).getType()!=0)
+					{
+						stdout.println("Parameter in given URL are:"+eparamlist.get(j).getType());
+			            param=param.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
+			            stdout.println("PARAM List"+param);
+					}}
 		        }
 				if(eparamlist.size()!=0)
 				{
 					stdout.println("Scanning the URL for LFI Vulnerability:");
-				this.kaliintegrator(ereqinfo);
+				this.kaliintegrator(ereqinfo,param,cparam);
 			}
 			}
 			stdout.println("\n\n");
@@ -180,15 +199,16 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 		return null;
 	}
 	
-	public void kaliintegrator(IRequestInfo ereqinfo2)
+	public void kaliintegrator(IRequestInfo ereqinfo2,String param2,String cparam)
 	{
 		PythonInterpreter interp = new PythonInterpreter(); 
 		 interp.exec("import sys");
 		 interp.exec("import os");
 		 interp.exec("import subprocess");
 		 interp.exec("import socket");
-		 String cmd1="fimap --url="+ereqinfo2.getUrl();
+		 String cmd1="fimap --url="+ereqinfo2.getUrl()+" --post='"+param2+"'"+" --cookie='"+cparam+"'";
 		 stdout.println(cmd1);
+
 		 interp.set("output", new PyString());
 		 interp.set("cmd", cmd1);		 
 		 interp.exec("output += subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)");
@@ -199,7 +219,7 @@ public class BurpExtender implements IBurpExtender,ITab,IMessageEditorController
 	        {
 	        	kiui1.append(ereqinfo2.getUrl().toString(),"Not Vulnerable");
 	        }
-	        else if (output.toString().contains("URL is Vulnerable"))
+	        else if (output.toString().contains("#::VULN INFO"))
 	        {
 	        	kiui1.append(ereqinfo2.getUrl().toString(),"Vulnerable");
 	        }
