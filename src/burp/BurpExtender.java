@@ -1,10 +1,13 @@
 package burp;
 
 import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
@@ -17,7 +20,7 @@ import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.util.PythonInterpreter;
 
-public class BurpExtender extends AbstractTableModel implements IBurpExtender,IExtensionStateListener,ITab, IHttpListener, IMessageEditorController
+public class BurpExtender extends AbstractTableModel implements IBurpExtender,IContextMenuFactory,IExtensionStateListener,ITab, IHttpListener, IMessageEditorController
 {
     private IBurpExtenderCallbacks callbacks;
     private IExtensionHelpers helpers;
@@ -30,6 +33,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
 	public PrintWriter stdout;
 	public IRequestInfo ereqinfo;
 	public IRequestInfo ereqinfo1;
+	public IRequestInfo ereqinfo2;
 	String param="";
 	String cparam="";
 
@@ -48,7 +52,6 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
         
         // set our extension name
         callbacks.setExtensionName("Fimap");
-        
         // create our UI
         SwingUtilities.invokeLater(new Runnable() 
         {
@@ -60,6 +63,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
                         
                 // table of log entries
                 Table logTable = new Table(BurpExtender.this);
+                logTable.setAutoCreateRowSorter(true);
                 JScrollPane scrollPane = new JScrollPane(logTable);
                 splitPane.setLeftComponent(scrollPane);
 
@@ -82,12 +86,15 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
                 // add the custom tab to Burp's UI
                 callbacks.addSuiteTab(BurpExtender.this);
                 
-                // register ourselves as an HTTP listener
+                // register ourselves as an Extension State listener
                 callbacks.registerExtensionStateListener(BurpExtender.this); 
         		callbacks.issueAlert("Extension Loaded Successfully");
                 
                 // register ourselves as an HTTP listener
                 callbacks.registerHttpListener(BurpExtender.this);
+                
+            	// register ourselves as an Context Menu Factory
+                callbacks.registerContextMenuFactory(BurpExtender.this);
             }
         });
     }
@@ -115,37 +122,32 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
     @Override
     public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo)
     {
-        // only process responses
+       callbacks.issueAlert("ProcessHttpMessage invoked by"+toolFlag);
+    	// only process responses
         if (!messageIsRequest)
         {
             // create a new log entry with the message details
-            /*synchronized(log)
+            synchronized(log)
             {
                 int row = log.size();
-                log.add(new LogEntry((row+1), callbacks.saveBuffersToTempFiles(messageInfo), 
-                        helpers.analyzeRequest(messageInfo)));
-                fireTableRowsInserted(row, row);
-            }*/
-        }
-        if(messageIsRequest==true)
-		{
-        	int row;
-        	messageInfo.setComment("Processing");
-        	synchronized(log)
-            {
-                 row = log.size();
-                log.add(new LogEntry((row+1), callbacks.saveBuffersToTempFiles(messageInfo), 
-                        helpers.analyzeRequest(messageInfo)));
+                log.add(new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
+                        helpers.analyzeRequest(messageInfo)));  
+                
                 fireTableRowsInserted(row, row);
             }
+        }
+        // only process resquests
+        if(messageIsRequest==true)
+		{
         	
+        	int row=log.size();
+        	   LogEntry temp=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
+                       helpers.analyzeRequest(messageInfo));    	
 			ereqinfo=helpers.analyzeRequest(messageInfo);
 			IHttpRequestResponse ereqres[]=callbacks.getProxyHistory();
-		//	stdout.println("History Length :"+ecallbacks.getProxyHistory().length);
 			for(IHttpRequestResponse  i:ereqres)
 			{
 				ereqinfo1=helpers.analyzeRequest(i);
-			//	stdout.println("History Contains :"+ereqinfo1.getUrl());
 			}
 			int cnt=0;
 			
@@ -156,16 +158,11 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
 			     if (ereqinfo1.getUrl().equals(ereqinfo.getUrl()))
 			     {
 			    	 cnt++;
-			  
-			    	
 			     }
 			   } 
 			if(cnt==1)
 			{
-				
-				
 				List<IParameter> eparamlist=ereqinfo.getParameters();
-				
 				for(int j = 0,n=0; j < eparamlist.size(); j++) {
 					
 					if(eparamlist.get(j).getType()==2)
@@ -173,29 +170,36 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
 						if(cparam.contains(eparamlist.get(j).getName())!=true)
 						{ 
 		            cparam=cparam.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
-
-					}}
+						}
+					}
 					else
-					{ if(eparamlist.get(j).getType()!=0)
-					{
+					{ 
+						if(eparamlist.get(j).getType()!=0)
+						{
 						
 			            param=param.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
 			       
-					}}
+						}
+					}
 		        }
 				if(eparamlist.size()!=0)
 				{
-
-				stdout.println("Scanning the URL for LFI Vulnerability:");
-				this.kaliintegrator(ereqinfo,param,cparam,messageInfo,row);
-				param="";
-				cparam="";
+					synchronized(this)
+					{
+						messageInfo.setComment("Processing"+temp.hashCode());
+						stdout.println("Scanning the URL for LFI Vulnerability:");
+						this.kaliintegrator(ereqinfo,param,cparam,messageInfo,temp.hashCode());
+						param="";
+						cparam="";
+					}
 			}else
 			{
-				messageInfo.setComment("Cannot Be tested for LFI Vulnerability");
-				log.set(row, new LogEntry((row+1), callbacks.saveBuffersToTempFiles(messageInfo), 
-                        helpers.analyzeRequest(messageInfo)));
+				messageInfo.setComment("Cannot Be tested for LFI Vulnerability"+temp.hashCode());
 			}
+			}
+			else
+			{
+				messageInfo.setComment("Duplicate Link/Already Tested"+temp.hashCode());
 			}
 			stdout.println("\n\n");
 		}
@@ -305,11 +309,48 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
             requestViewer.setMessage(logEntry.requestResponse.getRequest(), true);
             responseViewer.setMessage(logEntry.requestResponse.getResponse(), false);
             currentlyDisplayedItem = logEntry.requestResponse;
-            
             super.changeSelection(row, col, toggle, extend);
         }        
     }
     
+	@Override
+	public void extensionUnloaded() {
+		callbacks.issueAlert("Extension Unloaded Successfully");
+		
+	}
+	
+	public void kaliintegrator(IRequestInfo ereqinfo2,String param2,String cparam,IHttpRequestResponse messageInfo,int t)
+	{
+		PythonInterpreter interp = new PythonInterpreter(); 
+		 interp.exec("import sys");
+		 interp.exec("import os");
+		 interp.exec("import subprocess");
+		 interp.exec("import socket");
+		 String cmd1="fimap --url="+ereqinfo2.getUrl()+" --post='"+param2+"'"+" --cookie='"+cparam+"' --force-run";
+		 stdout.println(cmd1);   
+		 interp.set("output", new PyString());
+		 interp.set("cmd", cmd1);		 
+		 interp.exec("output += subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)");
+		
+	        PyObject output = interp.get("output");
+	        stdout.println("output is: " + output);
+	        if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
+	        {
+	        	messageInfo.setComment("Not Vulnerable"+t);
+	        }
+	        else if (output.toString().contains("#::VULN INFO"))
+	        {
+	        	messageInfo.setComment("Vulnerable"+t);
+	        }
+	        else
+	        {
+	        	messageInfo.setComment("Interupted!!");
+	        }
+	        interp.cleanup();
+	        interp.close();
+	}
+
+
     //
     // class to hold details of each log entry
     //
@@ -333,40 +374,62 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IE
         }
     }
 
+ // TODO Context Menu Creation
 	@Override
-	public void extensionUnloaded() {
-		callbacks.issueAlert("Extension Unloaded Successfully");
+	public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
+		
+		JMenuItem menu=new JMenuItem("Send it to Fimap");
+		menu.addActionListener(new MenuItemListener(invocation));
+		List<JMenuItem> item=new ArrayList<JMenuItem>();
+		item.add(menu);
+		return item;
+	}
+
+
+	
+	class MenuItemListener extends Thread implements ActionListener
+	{
+		
+		public IHttpRequestResponse[] reqres;
+		public int flag;
+		public IContextMenuInvocation invocation;
+		
+		public MenuItemListener(IContextMenuInvocation invocation) {
+			super();
+			this.reqres=invocation.getSelectedMessages();
+			this.flag=invocation.getToolFlag();
+		}
+
+		public void run(){  
+			for(int i=0;i<reqres.length;i++)
+			{
+				
+				processHttpMessage(11,true,reqres[i]); 
+				
+			}
+			
+			}  
+		@Override
+		public void actionPerformed(ActionEvent arg0) {
+			if(flag==2)
+			{
+				IRequestInfo temp=helpers.analyzeRequest(reqres[0]);
+				String host=temp.getUrl().getProtocol()+":\\"+temp.getUrl().getHost();
+				callbacks.issueAlert(host);
+				this.reqres=callbacks.getSiteMap(host);
+				
+			}
+			callbacks.issueAlert("length"+reqres.length+log.size());
+			MenuItemListener ne=new MenuItemListener(invocation);
+			ne.start();
+			
+			
+		}
 		
 	}
-	
-	public synchronized void kaliintegrator(IRequestInfo ereqinfo2,String param2,String cparam,IHttpRequestResponse messageInfo,int row1)
-	{
-		PythonInterpreter interp = new PythonInterpreter(); 
-		 interp.exec("import sys");
-		 interp.exec("import os");
-		 interp.exec("import subprocess");
-		 interp.exec("import socket");
-		 String cmd1="fimap --url="+ereqinfo2.getUrl()+" --post='"+param2+"'"+" --cookie='"+cparam+"'";
-		 stdout.println(cmd1);   
-		 interp.set("output", new PyString());
-		 interp.set("cmd", cmd1);		 
-		 interp.exec("output += subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)");
-		
-	        PyObject output = interp.get("output");
-	        stdout.println("output is: " + output);
-	        if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
-	        {
-	        	messageInfo.setComment("Not Vulnerable");
-	        	log.set(row1, new LogEntry((row1+1), callbacks.saveBuffersToTempFiles(messageInfo), 
-                        helpers.analyzeRequest(messageInfo)));
-	        }
-	        else if (output.toString().contains("#::VULN INFO"))
-	        {
-	        	messageInfo.setComment("Vulnerable");
-	        	log.set(row1, new LogEntry((row1+1), callbacks.saveBuffersToTempFiles(messageInfo), 
-                        helpers.analyzeRequest(messageInfo)));
-	        }
-	        interp.cleanup();
-	        interp.close();
+
+	public void test(int i, boolean b, IHttpRequestResponse req) {
+		// TODO Auto-generated method stub
+	this.processHttpMessage(i,b,req);
 	}
 }
