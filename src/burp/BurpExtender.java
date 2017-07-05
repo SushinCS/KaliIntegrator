@@ -15,7 +15,6 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
-
 import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.util.PythonInterpreter;
@@ -64,6 +63,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
                 // table of log entries
                 Table logTable = new Table(BurpExtender.this);
                 logTable.setAutoCreateRowSorter(true);
+                logTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
                 JScrollPane scrollPane = new JScrollPane(logTable);
                 splitPane.setLeftComponent(scrollPane);
 
@@ -124,25 +124,25 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
     {
        callbacks.issueAlert("ProcessHttpMessage invoked by"+toolFlag);
     	// only process responses
-        if (!messageIsRequest)
+        if (!messageIsRequest && toolFlag!=8)
         {
             // create a new log entry with the message details
             synchronized(log)
             {
                 int row = log.size();
                 log.add(new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
-                        helpers.analyzeRequest(messageInfo)));  
+                        helpers.analyzeRequest(messageInfo),toolFlag));  
                 
                 fireTableRowsInserted(row, row);
             }
         }
         // only process resquests
-        if(messageIsRequest==true)
+        if(messageIsRequest==true && toolFlag!=8)
 		{
         	
         	int row=log.size();
         	   LogEntry temp=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
-                       helpers.analyzeRequest(messageInfo));    	
+                       helpers.analyzeRequest(messageInfo),toolFlag);    	
 			ereqinfo=helpers.analyzeRequest(messageInfo);
 			IHttpRequestResponse ereqres[]=callbacks.getProxyHistory();
 			for(IHttpRequestResponse  i:ereqres)
@@ -194,6 +194,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 					}
 			}else
 			{
+				
 				messageInfo.setComment("Cannot Be tested for LFI Vulnerability"+temp.hashCode());
 			}
 			}
@@ -220,7 +221,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
     @Override
     public int getColumnCount()
     {
-        return 4;
+        return 5;
     }
 
     @Override
@@ -236,6 +237,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
                 return "Request Type";
             case 3:
                 return "LFI Status";
+            case 4:
+                return "Tool";
             default:
                 return "";
         }
@@ -262,6 +265,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
                 return logEntry.method;
             case 3:
                 return logEntry.status;
+            case 4:
+                return callbacks.getToolName(logEntry.tool);
             default:
                 return "";
         }
@@ -340,6 +345,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 	        }
 	        else if (output.toString().contains("#::VULN INFO"))
 	        {
+	        	messageInfo.setHighlight("red");
 	        	messageInfo.setComment("Vulnerable"+t);
 	        }
 	        else
@@ -358,14 +364,16 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
     private static class LogEntry
     {
         final int slno;
+        final int tool;
         final IHttpRequestResponsePersisted requestResponse;
         final URL url;
         final String method;
         public String status;
 
-        LogEntry(int sl, IHttpRequestResponsePersisted requestResponse, IRequestInfo ereqinfoobj)
+        LogEntry(int sl, IHttpRequestResponsePersisted requestResponse, IRequestInfo ereqinfoobj,int tool)
         {
             this.slno = sl;
+            this.tool=tool;
             this.requestResponse = requestResponse;
             this.url = ereqinfoobj.getUrl();
             this.method=ereqinfoobj.getMethod();
@@ -404,7 +412,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 			for(int i=0;i<reqres.length;i++)
 			{
 				
-				processHttpMessage(11,true,reqres[i]); 
+				processHttpMessage(flag,true,reqres[i]); 
 				
 			}
 			
@@ -414,9 +422,11 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 			if(flag==2)
 			{
 				IRequestInfo temp=helpers.analyzeRequest(reqres[0]);
-				String host=temp.getUrl().getProtocol()+":\\"+temp.getUrl().getHost();
+				String host=temp.getUrl().getProtocol()+"://"+temp.getUrl().getHost();
 				callbacks.issueAlert(host);
 				this.reqres=callbacks.getSiteMap(host);
+				callbacks.issueAlert("legth"+this.reqres.length);
+				callbacks.issueAlert("act"+callbacks.getSiteMap("http://etechnik-wichmann.de").length);
 				
 			}
 			callbacks.issueAlert("length"+reqres.length+log.size());
@@ -428,8 +438,5 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 		
 	}
 
-	public void test(int i, boolean b, IHttpRequestResponse req) {
-		// TODO Auto-generated method stub
-	this.processHttpMessage(i,b,req);
-	}
+
 }
