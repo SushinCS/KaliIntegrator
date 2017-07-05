@@ -140,9 +140,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
         if(messageIsRequest==true && toolFlag!=8)
 		{
         	
-        	int row=log.size();
-        	   LogEntry temp=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
-                       helpers.analyzeRequest(messageInfo),toolFlag);    	
+        	  	
 			ereqinfo=helpers.analyzeRequest(messageInfo);
 			IHttpRequestResponse ereqres[]=callbacks.getProxyHistory();
 			for(IHttpRequestResponse  i:ereqres)
@@ -186,21 +184,21 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 				{
 					synchronized(this)
 					{
-						messageInfo.setComment("Processing"+temp.hashCode());
+						messageInfo.setComment("Processing");
 						stdout.println("Scanning the URL for LFI Vulnerability:");
-						this.kaliintegrator(ereqinfo,param,cparam,messageInfo,temp.hashCode());
+						this.kaliintegrator(ereqinfo,param,cparam,messageInfo);
 						param="";
 						cparam="";
 					}
 			}else
 			{
 				
-				messageInfo.setComment("Cannot Be tested for LFI Vulnerability"+temp.hashCode());
+				messageInfo.setComment("Cannot Be tested for LFI Vulnerability");
 			}
 			}
 			else
 			{
-				messageInfo.setComment("Duplicate Link/Already Tested"+temp.hashCode());
+				messageInfo.setComment("Duplicate Link/Already Tested");
 			}
 			stdout.println("\n\n");
 		}
@@ -324,7 +322,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 		
 	}
 	
-	public void kaliintegrator(IRequestInfo ereqinfo2,String param2,String cparam,IHttpRequestResponse messageInfo,int t)
+	public void kaliintegrator(IRequestInfo ereqinfo2,String param2,String cparam,IHttpRequestResponse messageInfo)
 	{
 		PythonInterpreter interp = new PythonInterpreter(); 
 		 interp.exec("import sys");
@@ -341,12 +339,12 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 	        stdout.println("output is: " + output);
 	        if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
 	        {
-	        	messageInfo.setComment("Not Vulnerable"+t);
+	        	messageInfo.setComment("Not Vulnerable");
 	        }
 	        else if (output.toString().contains("#::VULN INFO"))
 	        {
 	        	messageInfo.setHighlight("red");
-	        	messageInfo.setComment("Vulnerable"+t);
+	        	messageInfo.setComment("Vulnerable");
 	        }
 	        else
 	        {
@@ -425,11 +423,11 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
 				String host=temp.getUrl().getProtocol()+"://"+temp.getUrl().getHost();
 				callbacks.issueAlert(host);
 				this.reqres=callbacks.getSiteMap(host);
-				callbacks.issueAlert("legth"+this.reqres.length);
-				callbacks.issueAlert("act"+callbacks.getSiteMap("http://etechnik-wichmann.de").length);
+				callbacks.issueAlert("legth   "+this.reqres.length);
+				callbacks.issueAlert("act   "+callbacks.getSiteMap("http://etechnik-wichmann.de").length);
 				
 			}
-			callbacks.issueAlert("length"+reqres.length+log.size());
+			callbacks.issueAlert("length    log"+reqres.length+log.size());
 			MenuItemListener ne=new MenuItemListener(invocation);
 			ne.start();
 			
