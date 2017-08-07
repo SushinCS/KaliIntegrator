@@ -1,40 +1,56 @@
 package burp;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
+import org.python.bouncycastle.util.Arrays;
 import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.util.PythonInterpreter;
 
 public class BurpExtender extends AbstractTableModel implements IBurpExtender,IContextMenuFactory,IExtensionStateListener,ITab, IHttpListener, IMessageEditorController
 {
+    /**
+    * 
+    */
+    private static final long serialVersionUID = 1L;
     private IBurpExtenderCallbacks callbacks;
     private IExtensionHelpers helpers;
     private JSplitPane splitPane;
     private IMessageEditor requestViewer;
     private IMessageEditor responseViewer;
+    private ITextEditor resultViewer;
     private final List<LogEntry> log = new ArrayList<LogEntry>();
+    public  List<String> parameterList = new ArrayList<String>();
+    private final HashMap<URL,List<String>> loghm = new HashMap<URL,List<String>>();
     private IHttpRequestResponse currentlyDisplayedItem;
     public PrintWriter stderr;
-	public PrintWriter stdout;
-	public IRequestInfo ereqinfo;
-	public IRequestInfo ereqinfo1;
-	public IRequestInfo ereqinfo2;
-	String param="";
-	String cparam="";
+    public PrintWriter stdout;
+    public IRequestInfo reqinfoObjk;
+    public IRequestInfo reqinfoObj;
+    String param="";
+    String cparam="";
+    public MyRenderer renderer=new MyRenderer();
+
 
     //
     // implement IBurpExtender
@@ -64,6 +80,10 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
                 Table logTable = new Table(BurpExtender.this);
                 logTable.setAutoCreateRowSorter(true);
                 logTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+                logTable.setAlignmentY(JTable.LEFT_ALIGNMENT);
+                
+                logTable.setDefaultRenderer(Object.class, renderer);
+                
                 JScrollPane scrollPane = new JScrollPane(logTable);
                 splitPane.setLeftComponent(scrollPane);
 
@@ -71,8 +91,10 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
                 JTabbedPane tabs = new JTabbedPane();
                 requestViewer = callbacks.createMessageEditor(BurpExtender.this, false);
                 responseViewer = callbacks.createMessageEditor(BurpExtender.this, false);
+                resultViewer = callbacks.createTextEditor();
                 tabs.addTab("Request", requestViewer.getComponent());
                 tabs.addTab("Response", responseViewer.getComponent());
+                tabs.addTab("Vulnerablity Status",resultViewer.getComponent());
                 splitPane.setRightComponent(tabs);
 
                 // customize our UI components
@@ -81,24 +103,27 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
                 callbacks.customizeUiComponent(scrollPane);
                 callbacks.customizeUiComponent(tabs);
                 
-        		stderr=new PrintWriter(callbacks.getStderr(), true);
-        		stdout=new PrintWriter(callbacks.getStdout(), true);
+                stderr=new PrintWriter(callbacks.getStderr(), true);
+                stdout=new PrintWriter(callbacks.getStdout(), true);
+                
                 // add the custom tab to Burp's UI
                 callbacks.addSuiteTab(BurpExtender.this);
                 
                 // register ourselves as an Extension State listener
                 callbacks.registerExtensionStateListener(BurpExtender.this); 
-        		callbacks.issueAlert("Extension Loaded Successfully");
+                callbacks.issueAlert("Extension Loaded Successfully");
                 
                 // register ourselves as an HTTP listener
                 callbacks.registerHttpListener(BurpExtender.this);
                 
-            	// register ourselves as an Context Menu Factory
+                // register ourselves as an Context Menu Factory
                 callbacks.registerContextMenuFactory(BurpExtender.this);
             }
         });
     }
 
+    
+ 
     //
     // implement ITab
     //
@@ -122,90 +147,142 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
     @Override
     public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo)
     {
-       callbacks.issueAlert("ProcessHttpMessage invoked by"+toolFlag);
-    	// only process responses
-        if (!messageIsRequest && toolFlag!=8)
+      
+    // only process responses   
+        if(messageIsRequest==false && toolFlag!=8)
         {
-            // create a new log entry with the message details
+            int row = log.size();
+            String output="Processing";
+            int uniqueFlag=0;
+            reqinfoObj=helpers.analyzeRequest(messageInfo);
+            parameterList=this.paramlist(reqinfoObj);
+            
+            synchronized(log)
+               {
+                  messageInfo.setComment("Processing..");
+                   LogEntry beforeProcessing=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
+                   helpers.analyzeRequest(messageInfo),toolFlag,output,parameterList);
+                   log.add(beforeProcessing); 
+                   fireTableRowsInserted(row, row);
+               }  
+             reqinfoObj=helpers.analyzeRequest(messageInfo);
+            
+            if (loghm.size()==0)
+            {
+               callbacks.issueAlert("No log");
+               uniqueFlag=0;
+            }
+            else
+            {
+              synchronized(loghm)
+            { 
+                  List<String> temp=this.paramlist(reqinfoObj);
+               if(loghm.get(reqinfoObj.getUrl())!=null && (temp.containsAll(loghm.get(reqinfoObj.getUrl())))&&(temp.size()!=0))
+               {
+
+                       uniqueFlag=1;
+                       callbacks.issueAlert("Duplicate Link");
+ 
+               }
+               else if(temp.size()!=0)
+               {
+                  output="Cannot Be tested for LFI Vulnerability";
+                 messageInfo.setComment("Cannot Be tested for LFI Vulnerability");  
+               }
+               else
+               {
+                   callbacks.issueAlert("Unique link");
+                   uniqueFlag=0;
+               }
+            }
+            }
+            
+            
+
+            if(uniqueFlag==0)
+            {
+
+                List<IParameter> eparamlist=reqinfoObj.getParameters();
+
+                for(int j = 0; j < eparamlist.size(); j++)
+                {
+
+                    if(eparamlist.get(j).getType()==2)
+                    {
+                        if(cparam.contains(eparamlist.get(j).getName())!=true)
+                        { 
+                            cparam=cparam.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
+                        }
+                    }
+                    else
+                    { 
+                        if(eparamlist.get(j).getType()!=0)
+                        {
+                        
+                       param=param.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
+                  
+                        }
+                    }
+               }
+                if(eparamlist.size()!=0)
+                {
+                	synchronized(loghm)
+                	{
+                   loghm.put(reqinfoObj.getUrl(),parameterList);
+                	}
+                   synchronized(this)
+                    {
+                        stdout.println("Scanning the URL for LFI Vulnerability:");
+                        output=this.kaliintegrator(reqinfoObj,param,cparam,messageInfo);
+                        callbacks.issueAlert(output);
+                        param="";
+                        cparam="";
+                    }
+            }else
+            {
+                output="Cannot Be tested for LFI Vulnerability";
+                messageInfo.setComment("Cannot Be tested for LFI Vulnerability");
+            }
+            }
+            else
+            {
+                messageInfo.setComment("Duplicate Link/Already Tested");
+                output="Duplicate Link/Already Tested";
+            }
+            stdout.println("\n\n");
             synchronized(log)
             {
-                int row = log.size();
-                log.add(new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
-                        helpers.analyzeRequest(messageInfo),toolFlag));  
                 
-                fireTableRowsInserted(row, row);
-            }
+                LogEntry afterProcessing=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
+                        helpers.analyzeRequest(messageInfo),toolFlag,output,parameterList);
+                loghm.put(reqinfoObj.getUrl(),parameterList);
+                this.setValueAt(afterProcessing, row, row);
+                fireTableRowsUpdated(row, row);
+            } 
+             
         }
-        // only process resquests
-        if(messageIsRequest==true && toolFlag!=8)
-		{
-        	
-        	  	
-			ereqinfo=helpers.analyzeRequest(messageInfo);
-			IHttpRequestResponse ereqres[]=callbacks.getProxyHistory();
-			for(IHttpRequestResponse  i:ereqres)
-			{
-				ereqinfo1=helpers.analyzeRequest(i);
-			}
-			int cnt=0;
-			
-			for(IHttpRequestResponse  i:ereqres)
-			{  
-				ereqinfo1=helpers.analyzeRequest(i);
-				
-			     if (ereqinfo1.getUrl().equals(ereqinfo.getUrl()))
-			     {
-			    	 cnt++;
-			     }
-			   } 
-			if(cnt==1)
-			{
-				List<IParameter> eparamlist=ereqinfo.getParameters();
-				for(int j = 0,n=0; j < eparamlist.size(); j++) {
-					
-					if(eparamlist.get(j).getType()==2)
-					{
-						if(cparam.contains(eparamlist.get(j).getName())!=true)
-						{ 
-		            cparam=cparam.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
-						}
-					}
-					else
-					{ 
-						if(eparamlist.get(j).getType()!=0)
-						{
-						
-			            param=param.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
-			       
-						}
-					}
-		        }
-				if(eparamlist.size()!=0)
-				{
-					synchronized(this)
-					{
-						messageInfo.setComment("Processing");
-						stdout.println("Scanning the URL for LFI Vulnerability:");
-						this.kaliintegrator(ereqinfo,param,cparam,messageInfo);
-						param="";
-						cparam="";
-					}
-			}else
-			{
-				
-				messageInfo.setComment("Cannot Be tested for LFI Vulnerability");
-			}
-			}
-			else
-			{
-				messageInfo.setComment("Duplicate Link/Already Tested");
-			}
-			stdout.println("\n\n");
-		}
-	
-	
+    
+    
     }
 
+    //To Compare Strings
+    public List<String> paramlist(IRequestInfo req)
+    {
+        List<IParameter> eparamlist=req.getParameters();
+        List<String> paramlist=new ArrayList<String>();
+        if(eparamlist.isEmpty())
+        {
+            return paramlist;
+        }
+        else
+        {
+        for(int i=0;i<eparamlist.size();i++)
+        {
+            paramlist.add(eparamlist.get(i).getName());    
+        }
+        return paramlist;
+        }
+    }
     //
     // extend AbstractTableModel
     //
@@ -245,18 +322,19 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
     @Override
     public Class<?> getColumnClass(int columnIndex)
     {
-        return String.class;
+        return getValueAt(0, columnIndex).getClass();
     }
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex)
     {
+        
         LogEntry logEntry = log.get(rowIndex);
 
         switch (columnIndex)
         {
             case 0:
-                return rowIndex;
+                return rowIndex+1;
             case 1:
                 return logEntry.url.toString();
             case 2:
@@ -268,7 +346,16 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
             default:
                 return "";
         }
+    
     }
+    
+    public void setValueAt(Object aValue, int rowIndex, int columnIndex)
+    {
+        
+        LogEntry logEntry =(LogEntry) aValue;
+        log.set(rowIndex,logEntry);
+    }
+    
 
     //
     // implement IMessageEditorController
@@ -284,7 +371,13 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
     @Override
     public byte[] getResponse()
     {
+        if(currentlyDisplayedItem.getResponse()==null)
+        {
+            return new byte[0];
+        }
+        
         return currentlyDisplayedItem.getResponse();
+          
     }
 
     @Override
@@ -299,6 +392,11 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
     
     private class Table extends JTable
     {
+        /**
+        * 
+        */
+        private static final long serialVersionUID = 1L;
+
         public Table(TableModel tableModel)
         {
             super(tableModel);
@@ -308,51 +406,71 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
         public void changeSelection(int row, int col, boolean toggle, boolean extend)
         {
             // show the log entry for the selected row
-            LogEntry logEntry = log.get(row);
+            //row=convertRowIndexToView(row);
+            callbacks.issueAlert("row:"+row+"column:"+col);
+            int row1=convertRowIndexToView(row);
+            int col1=convertColumnIndexToView(col);
+            int row2=convertRowIndexToModel(row);
+            int col2=convertColumnIndexToModel(col);
+            
+            callbacks.issueAlert("row1:"+row1+"column1:"+col1);
+            callbacks.issueAlert("row2:"+row2+"column2:"+col2);
+            LogEntry logEntry = log.get(row2);
             requestViewer.setMessage(logEntry.requestResponse.getRequest(), true);
+            if(logEntry.requestResponse.getResponse()==null)
+            {
+                responseViewer.setMessage(new byte[0], false);    
+            }
+            else
+            {
             responseViewer.setMessage(logEntry.requestResponse.getResponse(), false);
+            }
+            resultViewer.setText(logEntry.voutput.getBytes());
             currentlyDisplayedItem = logEntry.requestResponse;
             super.changeSelection(row, col, toggle, extend);
-        }        
+            
+        }  
+        
     }
     
-	@Override
-	public void extensionUnloaded() {
-		callbacks.issueAlert("Extension Unloaded Successfully");
-		
-	}
-	
-	public void kaliintegrator(IRequestInfo ereqinfo2,String param2,String cparam,IHttpRequestResponse messageInfo)
-	{
-		PythonInterpreter interp = new PythonInterpreter(); 
-		 interp.exec("import sys");
-		 interp.exec("import os");
-		 interp.exec("import subprocess");
-		 interp.exec("import socket");
-		 String cmd1="fimap --url="+ereqinfo2.getUrl()+" --post='"+param2+"'"+" --cookie='"+cparam+"' --force-run";
-		 stdout.println(cmd1);   
-		 interp.set("output", new PyString());
-		 interp.set("cmd", cmd1);		 
-		 interp.exec("output += subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)");
-		
-	        PyObject output = interp.get("output");
-	        stdout.println("output is: " + output);
-	        if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
-	        {
-	        	messageInfo.setComment("Not Vulnerable");
-	        }
-	        else if (output.toString().contains("#::VULN INFO"))
-	        {
-	        	messageInfo.setHighlight("red");
-	        	messageInfo.setComment("Vulnerable");
-	        }
-	        else
-	        {
-	        	messageInfo.setComment("Interupted!!");
-	        }
-	        interp.cleanup();
-	        interp.close();
-	}
+      @Override
+    public void extensionUnloaded() {
+        callbacks.issueAlert("Extension Unloaded Successfully");
+        
+    }
+    
+    public String kaliintegrator(IRequestInfo reqinfoObjk,String param2,String cparam,IHttpRequestResponse messageInfo)
+    {
+        PythonInterpreter interp = new PythonInterpreter(); 
+        interp.exec("import sys");
+        interp.exec("import os");
+        interp.exec("import subprocess");
+        interp.exec("import socket");
+        String cmd1="fimap --url="+reqinfoObjk.getUrl()+" --post='"+param2+"'"+" --cookie='"+cparam+"' --force-run";
+        stdout.println(cmd1);   
+        interp.set("output", new PyString());
+        interp.set("cmd", cmd1);         
+        interp.exec("output += subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)");
+        
+           PyObject output = interp.get("output");
+           stdout.println("Output is: " + output);
+           if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
+           {
+               messageInfo.setComment("Not Vulnerable");
+           }
+           else if (output.toString().contains("#::VULN INFO"))
+           {
+               messageInfo.setHighlight("red");
+               messageInfo.setComment("Vulnerable");
+           }
+           else
+           {
+               messageInfo.setComment("Interupted!!");
+           }
+           interp.cleanup();
+           interp.close();
+           return output.asString();
+    }
 
 
     //
@@ -367,8 +485,10 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
         final URL url;
         final String method;
         public String status;
+        public String voutput;
+        public  List<String> paramlist = new ArrayList<String>();
 
-        LogEntry(int sl, IHttpRequestResponsePersisted requestResponse, IRequestInfo ereqinfoobj,int tool)
+        LogEntry(int sl, IHttpRequestResponsePersisted requestResponse, IRequestInfo ereqinfoobj,int tool, String output ,List<String> paramlist)
         {
             this.slno = sl;
             this.tool=tool;
@@ -376,65 +496,92 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender,IC
             this.url = ereqinfoobj.getUrl();
             this.method=ereqinfoobj.getMethod();
             this.status=requestResponse.getComment();
+            this.voutput=output;
+            this.paramlist=paramlist;
             
         }
+
     }
 
  // TODO Context Menu Creation
-	@Override
-	public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
-		
-		JMenuItem menu=new JMenuItem("Send it to Fimap");
-		menu.addActionListener(new MenuItemListener(invocation));
-		List<JMenuItem> item=new ArrayList<JMenuItem>();
-		item.add(menu);
-		return item;
-	}
+    @Override
+    public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
+        
+        JMenuItem menu=new JMenuItem("Send to Fimap");
+        menu.addActionListener(new MenuItemListener(invocation));
+        List<JMenuItem> item=new ArrayList<JMenuItem>();
+        item.add(menu);
+        return item;
+    }
 
 
-	
-	class MenuItemListener extends Thread implements ActionListener
-	{
-		
-		public IHttpRequestResponse[] reqres;
-		public int flag;
-		public IContextMenuInvocation invocation;
-		
-		public MenuItemListener(IContextMenuInvocation invocation) {
-			super();
-			this.reqres=invocation.getSelectedMessages();
-			this.flag=invocation.getToolFlag();
-		}
+    class MenuItemListener extends Thread implements ActionListener
+    {
+        
+        public IHttpRequestResponse[] reqres;
+        public int flag;
+        public IContextMenuInvocation invocation1;
+        public MenuItemListener(IContextMenuInvocation invocation) 
+        {
+            super();
+            this.invocation1=invocation;
+            this.reqres=this.invocation1.getSelectedMessages();
+            callbacks.issueAlert("Invocation"+invocation1.getInvocationContext()+":::"+IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TREE);
+            if(invocation1.getInvocationContext()==IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TREE)
+            {
+                IRequestInfo temp=helpers.analyzeRequest(reqres[0]);
+                String host=temp.getUrl().getProtocol()+"://"+temp.getUrl().getHost();
+                callbacks.issueAlert(host);
+                this.reqres=callbacks.getSiteMap(host);
+    
+            }
+            this.flag=this.invocation1.getToolFlag();
+        }
 
-		public void run(){  
-			for(int i=0;i<reqres.length;i++)
-			{
-				
-				processHttpMessage(flag,true,reqres[i]); 
-				
-			}
-			
-			}  
-		@Override
-		public void actionPerformed(ActionEvent arg0) {
-			if(flag==2)
-			{
-				IRequestInfo temp=helpers.analyzeRequest(reqres[0]);
-				String host=temp.getUrl().getProtocol()+"://"+temp.getUrl().getHost();
-				callbacks.issueAlert(host);
-				this.reqres=callbacks.getSiteMap(host);
-				callbacks.issueAlert("legth   "+this.reqres.length);
-				callbacks.issueAlert("act   "+callbacks.getSiteMap("http://etechnik-wichmann.de").length);
-				
-			}
-			callbacks.issueAlert("length    log"+reqres.length+log.size());
-			MenuItemListener ne=new MenuItemListener(invocation);
-			ne.start();
-			
-			
-		}
-		
-	}
+        public void run(){  
+            for(int i=0;i<reqres.length;i++)
+            {
+                callbacks.issueAlert("Call"+i+":"+flag+":"+reqres.length);
+                processHttpMessage(flag,false,reqres[i]); 
+                
+            }
+            
+            }  
+        @Override
+        public void actionPerformed(ActionEvent arg0) 
+        {
+            callbacks.issueAlert("length:logsize"+reqres.length+":"+log.size());
+            MenuItemListener ne=new MenuItemListener(this.invocation1);
+            ne.start();    
+            
+        }
+        
+    }
+    
+    
 
 
 }
+class MyRenderer extends DefaultTableCellRenderer {
+	  public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+	      boolean hasFocus, int row, int column) {	  
+		Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+	
+
+		if(isSelected)
+		{
+			c.setBackground(table.getSelectionBackground());
+		}
+		else if (value!=null&&value== "Vulnerable")
+	    {
+	    c.setBackground(Color.red);
+	    }
+	    else
+	    {
+	    	c.setBackground(Color.WHITE);
+	    }
+	    return c;
+	  }
+	}
+
+
