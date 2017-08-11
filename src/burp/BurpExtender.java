@@ -2,6 +2,8 @@ package burp;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.PrintWriter;
@@ -9,13 +11,15 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
@@ -26,562 +30,131 @@ import org.python.bouncycastle.util.Arrays;
 import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.util.PythonInterpreter;
+import burp.KaliIntegrator;
 
-public class BurpExtender extends AbstractTableModel implements IBurpExtender,IContextMenuFactory,IExtensionStateListener,ITab, IHttpListener, IMessageEditorController
+public class BurpExtender  implements IBurpExtender,ITab 
 {
+  
     /**
     * 
     */
     private static final long serialVersionUID = 1L;
-    private IBurpExtenderCallbacks callbacks;
-    private IExtensionHelpers helpers;
-    private JSplitPane splitPane;
-    private IMessageEditor requestViewer;
-    private IMessageEditor responseViewer;
-    private ITextEditor resultViewer;
-    private final List<LogEntry> log = new ArrayList<LogEntry>();
-    public  List<String> parameterList = new ArrayList<String>();
-    private final HashMap<URL,List<String>> loghm = new HashMap<URL,List<String>>();
-    private IHttpRequestResponse currentlyDisplayedItem;
-    public PrintWriter stderr;
-    public PrintWriter stdout;
-    public IRequestInfo reqinfoObjk;
-    public IRequestInfo reqinfoObj;
-    String param="";
-    String cparam="";
-    public MyRenderer renderer=new MyRenderer();
-
-
-    //
-    // implement IBurpExtender
-    //
-    
-    @Override
-    public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks)
+    public IBurpExtenderCallbacks callbacks;
+    public JPanel panel=new JPanel();
+    private final JLabel label1 = new JLabel("Kali Integrator");
+    private final JLabel label2 = new JLabel("Extension that lets you run linux tools on the background for the request received by BurpTool");
+    private final JLabel label3 = new JLabel("Command");
+    private final JTextField commandField = new JTextField();
+    private final JButton Add = new JButton("Add");
+    private final JLabel label4 = new JLabel("Please enter the Command in the following pattern:\n fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run");
+    private final JLabel label5 = new JLabel("Console");
+   
+	
+    public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks)
     {
-        // keep a reference to our callbacks object
-        this.callbacks = callbacks;
-        
-        // obtain an extension helpers object
-        helpers = callbacks.getHelpers();
-        
-        // set our extension name
-        callbacks.setExtensionName("Fimap");
-        // create our UI
-        SwingUtilities.invokeLater(new Runnable() 
-        {
-            @Override
-            public void run()
-            {
-                // main split pane
-                splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-                        
-                // table of log entries
-                Table logTable = new Table(BurpExtender.this);
-                logTable.setAutoCreateRowSorter(true);
-                logTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-                logTable.setAlignmentY(JTable.LEFT_ALIGNMENT);
-                
-                logTable.setDefaultRenderer(Object.class, renderer);
-                
-                JScrollPane scrollPane = new JScrollPane(logTable);
-                splitPane.setLeftComponent(scrollPane);
+    	this.callbacks=callbacks;
+    	
+    	 
+        panel.setLayout(null);
+        panel.setBackground(Color.WHITE);
+    	  
+    	commandField.setBounds(104, 77, 770, 30);
+  		commandField.setColumns(10);
+  		
+  		panel.setLayout(null);
+  		label1.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 14));
+  		label1.setForeground(new Color(255, 140, 0));
+  		label1.setBounds(12, 12, 600, 24);
+  		
+  		panel.add(label1);
+  		label2.setBounds(12, 35, 620, 30);
+  		
+  		panel.add(label2);
+  		label3.setBounds(12, 84, 82, 15);
+  		label3.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
+  		panel.add(label3);
+  		
+  		panel.add(commandField);
+  		Add.setBounds(900, 77, 117, 30);
+  		
+  		panel.add(Add);
+  		label4.setBounds(12,111, 900, 30);
+  		
+  		panel.add(label4);
+  		label4.setFont(new Font("Lato Light", Font.BOLD, 12));
+  		label5.setBounds(12, 147, 375, 40);
+  		label5.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
+  		panel.add(label5);
+  		
+  		JTextArea textArea = new JTextArea();
+  		textArea.setBounds(12, 183, 600, 137);
+  		panel.add(textArea);
+    	 SwingUtilities.invokeLater(new Runnable() 
+         {
+             @Override
+             public void run()
+             {
+                 // main split pane
 
-                // tabs with request/response viewers
-                JTabbedPane tabs = new JTabbedPane();
-                requestViewer = callbacks.createMessageEditor(BurpExtender.this, false);
-                responseViewer = callbacks.createMessageEditor(BurpExtender.this, false);
-                resultViewer = callbacks.createTextEditor();
-                tabs.addTab("Request", requestViewer.getComponent());
-                tabs.addTab("Response", responseViewer.getComponent());
-                tabs.addTab("Vulnerablity Status",resultViewer.getComponent());
-                splitPane.setRightComponent(tabs);
+         		Add.addActionListener(new ActionListener() {
+         			public void actionPerformed(ActionEvent arg0) {
+         				String cmd=commandField.getText();
+         				
+         				if(!(cmd.contains("POST_PARAMETER")||cmd.contains("GET_PARAMETER")||cmd.contains("COOKIE_PARAMETER")))
+         				{
+         					cmd="";
+         				}
+         				
+         				if(cmd.contains("fimap")&&cmd!="")
+         				{
+         					KaliIntegrator fimap=new KaliIntegrator("Fimap",commandField.getText());
+         					fimap.registerCallbacks(callbacks);
+         					textArea.append("Command Addedd Successfully:\n"+commandField.getText());
+         					label4.setText("Success!!");
+         				}
+         				else if(cmd.contains("xsser"))
+         				{
+         					KaliIntegrator fimap=new KaliIntegrator("Xsser",commandField.getText());
+         					fimap.registerCallbacks(callbacks);
+         					
+         					textArea.append("Command Addedd Successfully:\n"+commandField.getText());
+         					label4.setText("Success!!");
+         				}
+         				else
+         				{
+         					label4.setText("No Command Set");
+         				}
+         			}
+         		});
 
-                // customize our UI components
-                callbacks.customizeUiComponent(splitPane);
-                callbacks.customizeUiComponent(logTable);
-                callbacks.customizeUiComponent(scrollPane);
-                callbacks.customizeUiComponent(tabs);
-                
-                stderr=new PrintWriter(callbacks.getStderr(), true);
-                stdout=new PrintWriter(callbacks.getStdout(), true);
-                
-                // add the custom tab to Burp's UI
+         		
+         		callbacks.customizeUiComponent(label1);
+         		callbacks.customizeUiComponent(label2);
+         		callbacks.customizeUiComponent(label3);
+         		callbacks.customizeUiComponent(label4);
+         		callbacks.customizeUiComponent(label5);
+         		callbacks.customizeUiComponent(panel);
+         		callbacks.customizeUiComponent(commandField);
+         		callbacks.customizeUiComponent(Add);
                 callbacks.addSuiteTab(BurpExtender.this);
-                
-                // register ourselves as an Extension State listener
-                callbacks.registerExtensionStateListener(BurpExtender.this); 
-                callbacks.issueAlert("Extension Loaded Successfully");
-                
-                // register ourselves as an HTTP listener
-                callbacks.registerHttpListener(BurpExtender.this);
-                
-                // register ourselves as an Context Menu Factory
-                callbacks.registerContextMenuFactory(BurpExtender.this);
-            }
-        });
+                 
+             }
+         });
+    	
     }
-
-    
- 
-    //
-    // implement ITab
-    //
-
-    @Override
-    public String getTabCaption()
-    {
-        return "Fimap";
-    }
-
-    @Override
-    public Component getUiComponent()
-    {
-        return splitPane;
-    }
-
-    //
-    // implement IHttpListener
-    //
-    
-    @Override
-    public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo)
-    {
-      
-    // only process responses   
-        if(messageIsRequest==false && toolFlag!=8)
-        {
-            int row = log.size();
-            String output="Processing";
-            int uniqueFlag=0;
-            reqinfoObj=helpers.analyzeRequest(messageInfo);
-            parameterList=this.paramlist(reqinfoObj);
-            
-            synchronized(log)
-               {
-                  messageInfo.setComment("Processing..");
-                   LogEntry beforeProcessing=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
-                   helpers.analyzeRequest(messageInfo),toolFlag,output,parameterList);
-                   log.add(beforeProcessing); 
-                   fireTableRowsInserted(row, row);
-               }  
-             reqinfoObj=helpers.analyzeRequest(messageInfo);
-            
-            if (loghm.size()==0)
-            {
-               callbacks.issueAlert("No log");
-               uniqueFlag=0;
-            }
-            else
-            {
-              synchronized(loghm)
-            { 
-                  List<String> temp=this.paramlist(reqinfoObj);
-               if(loghm.get(reqinfoObj.getUrl())!=null && (temp.containsAll(loghm.get(reqinfoObj.getUrl())))&&(temp.size()!=0))
-               {
-
-                       uniqueFlag=1;
-                       callbacks.issueAlert("Duplicate Link");
- 
-               }
-               else if(temp.size()!=0)
-               {
-                  output="Cannot Be tested for LFI Vulnerability";
-                 messageInfo.setComment("Cannot Be tested for LFI Vulnerability");  
-               }
-               else
-               {
-                   callbacks.issueAlert("Unique link");
-                   uniqueFlag=0;
-               }
-            }
-            }
-            
-            
-
-            if(uniqueFlag==0)
-            {
-
-                List<IParameter> eparamlist=reqinfoObj.getParameters();
-
-                for(int j = 0; j < eparamlist.size(); j++)
-                {
-
-                    if(eparamlist.get(j).getType()==2)
-                    {
-                        if(cparam.contains(eparamlist.get(j).getName())!=true)
-                        { 
-                            cparam=cparam.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
-                        }
-                    }
-                    else
-                    { 
-                        if(eparamlist.get(j).getType()!=0)
-                        {
-                        
-                       param=param.concat(eparamlist.get(j).getName()+"="+eparamlist.get(j).getValue()+";");
-                  
-                        }
-                    }
-               }
-                if(eparamlist.size()!=0)
-                {
-                	synchronized(loghm)
-                	{
-                   loghm.put(reqinfoObj.getUrl(),parameterList);
-                	}
-                   synchronized(this)
-                    {
-                        stdout.println("Scanning the URL for LFI Vulnerability:");
-                        output=this.kaliintegrator(reqinfoObj,param,cparam,messageInfo);
-                        callbacks.issueAlert(output);
-                        param="";
-                        cparam="";
-                    }
-            }else
-            {
-                output="Cannot Be tested for LFI Vulnerability";
-                messageInfo.setComment("Cannot Be tested for LFI Vulnerability");
-            }
-            }
-            else
-            {
-                messageInfo.setComment("Duplicate Link/Already Tested");
-                output="Duplicate Link/Already Tested";
-            }
-            stdout.println("\n\n");
-            synchronized(log)
-            {
-                
-                LogEntry afterProcessing=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
-                        helpers.analyzeRequest(messageInfo),toolFlag,output,parameterList);
-                loghm.put(reqinfoObj.getUrl(),parameterList);
-                this.setValueAt(afterProcessing, row, row);
-                fireTableRowsUpdated(row, row);
-            } 
-             
-        }
-    
-    
-    }
-
-    //To Compare Strings
-    public List<String> paramlist(IRequestInfo req)
-    {
-        List<IParameter> eparamlist=req.getParameters();
-        List<String> paramlist=new ArrayList<String>();
-        if(eparamlist.isEmpty())
-        {
-            return paramlist;
-        }
-        else
-        {
-        for(int i=0;i<eparamlist.size();i++)
-        {
-            paramlist.add(eparamlist.get(i).getName());    
-        }
-        return paramlist;
-        }
-    }
-    //
-    // extend AbstractTableModel
-    //
-    
-    @Override
-    public int getRowCount()
-    {
-        return log.size();
-    }
-
-    @Override
-    public int getColumnCount()
-    {
-        return 5;
-    }
-
-    @Override
-    public String getColumnName(int columnIndex)
-    {
-        switch (columnIndex)
-        {
-            case 0:
-                return "#";
-            case 1:
-                return "URL";
-            case 2:
-                return "Request Type";
-            case 3:
-                return "LFI Status";
-            case 4:
-                return "Tool";
-            default:
-                return "";
-        }
-    }
-
-    @Override
-    public Class<?> getColumnClass(int columnIndex)
-    {
-        return getValueAt(0, columnIndex).getClass();
-    }
-
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex)
-    {
-        
-        LogEntry logEntry = log.get(rowIndex);
-
-        switch (columnIndex)
-        {
-            case 0:
-                return rowIndex+1;
-            case 1:
-                return logEntry.url.toString();
-            case 2:
-                return logEntry.method;
-            case 3:
-                return logEntry.status;
-            case 4:
-                return callbacks.getToolName(logEntry.tool);
-            default:
-                return "";
-        }
-    
-    }
-    
-    public void setValueAt(Object aValue, int rowIndex, int columnIndex)
-    {
-        
-        LogEntry logEntry =(LogEntry) aValue;
-        log.set(rowIndex,logEntry);
-    }
-    
-
-    //
-    // implement IMessageEditorController
-    // this allows our request/response viewers to obtain details about the messages being displayed
-    //
-    
-    @Override
-    public byte[] getRequest()
-    {
-        return currentlyDisplayedItem.getRequest();
-    }
-
-    @Override
-    public byte[] getResponse()
-    {
-        if(currentlyDisplayedItem.getResponse()==null)
-        {
-            return new byte[0];
-        }
-        
-        return currentlyDisplayedItem.getResponse();
-          
-    }
-
-    @Override
-    public IHttpService getHttpService()
-    {
-        return currentlyDisplayedItem.getHttpService();
-    }
-
-    //
-    // extend JTable to handle cell selection
-    //
-    
-    private class Table extends JTable
-    {
-        /**
-        * 
-        */
-        private static final long serialVersionUID = 1L;
-
-        public Table(TableModel tableModel)
-        {
-            super(tableModel);
-        }
-        
-        @Override
-        public void changeSelection(int row, int col, boolean toggle, boolean extend)
-        {
-            // show the log entry for the selected row
-            //row=convertRowIndexToView(row);
-            callbacks.issueAlert("row:"+row+"column:"+col);
-            int row1=convertRowIndexToView(row);
-            int col1=convertColumnIndexToView(col);
-            int row2=convertRowIndexToModel(row);
-            int col2=convertColumnIndexToModel(col);
-            
-            callbacks.issueAlert("row1:"+row1+"column1:"+col1);
-            callbacks.issueAlert("row2:"+row2+"column2:"+col2);
-            LogEntry logEntry = log.get(row2);
-            requestViewer.setMessage(logEntry.requestResponse.getRequest(), true);
-            if(logEntry.requestResponse.getResponse()==null)
-            {
-                responseViewer.setMessage(new byte[0], false);    
-            }
-            else
-            {
-            responseViewer.setMessage(logEntry.requestResponse.getResponse(), false);
-            }
-            resultViewer.setText(logEntry.voutput.getBytes());
-            currentlyDisplayedItem = logEntry.requestResponse;
-            super.changeSelection(row, col, toggle, extend);
-            
-        }  
-        
-    }
-    
-      @Override
-    public void extensionUnloaded() {
-        callbacks.issueAlert("Extension Unloaded Successfully");
-        
-    }
-    
-    public String kaliintegrator(IRequestInfo reqinfoObjk,String param2,String cparam,IHttpRequestResponse messageInfo)
-    {
-        PythonInterpreter interp = new PythonInterpreter(); 
-        interp.exec("import sys");
-        interp.exec("import os");
-        interp.exec("import subprocess");
-        interp.exec("import socket");
-        String cmd1="fimap --url="+reqinfoObjk.getUrl()+" --post='"+param2+"'"+" --cookie='"+cparam+"' --force-run";
-        stdout.println(cmd1);   
-        interp.set("output", new PyString());
-        interp.set("cmd", cmd1);         
-        interp.exec("output += subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)");
-        
-           PyObject output = interp.get("output");
-           stdout.println("Output is: " + output);
-           if(output.toString().contains("Target URL isn't affected by any file inclusion bug :("))
-           {
-               messageInfo.setComment("Not Vulnerable");
-           }
-           else if (output.toString().contains("#::VULN INFO"))
-           {
-               messageInfo.setHighlight("red");
-               messageInfo.setComment("Vulnerable");
-           }
-           else
-           {
-               messageInfo.setComment("Interupted!!");
-           }
-           interp.cleanup();
-           interp.close();
-           return output.asString();
-    }
-
-
-    //
-    // class to hold details of each log entry
-    //
-    
-    private static class LogEntry
-    {
-        final int slno;
-        final int tool;
-        final IHttpRequestResponsePersisted requestResponse;
-        final URL url;
-        final String method;
-        public String status;
-        public String voutput;
-        public  List<String> paramlist = new ArrayList<String>();
-
-        LogEntry(int sl, IHttpRequestResponsePersisted requestResponse, IRequestInfo ereqinfoobj,int tool, String output ,List<String> paramlist)
-        {
-            this.slno = sl;
-            this.tool=tool;
-            this.requestResponse = requestResponse;
-            this.url = ereqinfoobj.getUrl();
-            this.method=ereqinfoobj.getMethod();
-            this.status=requestResponse.getComment();
-            this.voutput=output;
-            this.paramlist=paramlist;
-            
-        }
-
-    }
-
- // TODO Context Menu Creation
-    @Override
-    public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
-        
-        JMenuItem menu=new JMenuItem("Send to Fimap");
-        menu.addActionListener(new MenuItemListener(invocation));
-        List<JMenuItem> item=new ArrayList<JMenuItem>();
-        item.add(menu);
-        return item;
-    }
-
-
-    class MenuItemListener extends Thread implements ActionListener
-    {
-        
-        public IHttpRequestResponse[] reqres;
-        public int flag;
-        public IContextMenuInvocation invocation1;
-        public MenuItemListener(IContextMenuInvocation invocation) 
-        {
-            super();
-            this.invocation1=invocation;
-            this.reqres=this.invocation1.getSelectedMessages();
-            callbacks.issueAlert("Invocation"+invocation1.getInvocationContext()+":::"+IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TREE);
-            if(invocation1.getInvocationContext()==IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TREE)
-            {
-                IRequestInfo temp=helpers.analyzeRequest(reqres[0]);
-                String host=temp.getUrl().getProtocol()+"://"+temp.getUrl().getHost();
-                callbacks.issueAlert(host);
-                this.reqres=callbacks.getSiteMap(host);
-    
-            }
-            this.flag=this.invocation1.getToolFlag();
-        }
-
-        public void run(){  
-            for(int i=0;i<reqres.length;i++)
-            {
-                callbacks.issueAlert("Call"+i+":"+flag+":"+reqres.length);
-                processHttpMessage(flag,false,reqres[i]); 
-                
-            }
-            
-            }  
-        @Override
-        public void actionPerformed(ActionEvent arg0) 
-        {
-            callbacks.issueAlert("length:logsize"+reqres.length+":"+log.size());
-            MenuItemListener ne=new MenuItemListener(this.invocation1);
-            ne.start();    
-            
-        }
-        
-    }
-    
-    
+	@Override
+	public String getTabCaption() {
+		// TODO Auto-generated method stub
+		return "Configuration Page";
+	}
+	@Override
+	public Component getUiComponent() {
+		// TODO Auto-generated method stub
+		return panel;
+	}
 
 
 }
-class MyRenderer extends DefaultTableCellRenderer {
-	  public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-	      boolean hasFocus, int row, int column) {	  
-		Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-	
 
-		if(isSelected)
-		{
-			c.setBackground(table.getSelectionBackground());
-		}
-		else if (value!=null&&value== "Vulnerable")
-	    {
-	    c.setBackground(Color.red);
-	    }
-	    else
-	    {
-	    	c.setBackground(Color.WHITE);
-	    }
-	    return c;
-	  }
-	}
 
 
