@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
@@ -26,24 +27,24 @@ import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.util.PythonInterpreter;
 
-public class KaliIntegrator extends AbstractTableModel implements IContextMenuFactory,IExtensionStateListener,ITab, IHttpListener, IMessageEditorController
+public class KaliIntegrator extends AbstractTableModel implements IContextMenuFactory,IExtensionStateListener, IHttpListener, IMessageEditorController
 {
     /**
     * 
     */
-    private static final long serialVersionUID = 1L;
+    public static final long serialVersionUID = 1L;
     public String toolName="default";
     public String command="default";
-    private IBurpExtenderCallbacks callbacks;
-    private IExtensionHelpers helpers;
-    private JSplitPane splitPane;
-    private IMessageEditor requestViewer;
-    private IMessageEditor responseViewer;
-    private ITextEditor resultViewer;
-    private final List<LogEntry> log = new ArrayList<LogEntry>();
-    public  List<String> parameterList = new ArrayList<String>();
-    private final HashMap<URL,List<String>> loghm = new HashMap<URL,List<String>>();
-    private IHttpRequestResponse currentlyDisplayedItem;
+    public IBurpExtenderCallbacks callbacks;
+    public IExtensionHelpers helpers;
+    public JSplitPane splitPane;
+    public IMessageEditor requestViewer;
+   public  IMessageEditor responseViewer;
+    public ITextEditor resultViewer;
+    public final List<LogEntry> log = new ArrayList<LogEntry>();
+    public List<String> parameterList = new ArrayList<String>();
+    public final HashMap<URL,List<String>> loghm = new HashMap<URL,List<String>>();
+    public IHttpRequestResponse currentlyDisplayedItem;
     public PrintWriter stderr;
     public PrintWriter stdout;
     public IRequestInfo reqinfoObjk;
@@ -51,12 +52,18 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     String param="";
     String cparam="";
     public MyRenderer renderer=new MyRenderer();
-    public JTabbedPane tabbedPane=new JTabbedPane();
+    public JPanel panel=new JPanel();
+    public JTabbedPane tabs = new JTabbedPane();
+    public KaliIntegrator()
+    {
+    	
+    }
 
-    public KaliIntegrator(String toolName,String command)
+    public KaliIntegrator(JTabbedPaneCloseButton tab,String toolName,String command)
     {
     	this.toolName=toolName;
     	this.command=command;
+         
     }
     //
     // implement IBurpExtender
@@ -91,7 +98,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 splitPane.setLeftComponent(scrollPane);
 
                 // tabs with request/response viewers
-                JTabbedPane tabs = new JTabbedPane();
+                
                 requestViewer = callbacks.createMessageEditor(KaliIntegrator.this, false);
                 responseViewer = callbacks.createMessageEditor(KaliIntegrator.this, false);
                 resultViewer = callbacks.createTextEditor();
@@ -100,29 +107,31 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 tabs.addTab("Vulnerablity Status",resultViewer.getComponent());
                 splitPane.setRightComponent(tabs);
 
-                tabbedPane.add(splitPane);
+               panel.add(splitPane);
                 // customize our UI components
                 callbacks.customizeUiComponent(splitPane);
                 callbacks.customizeUiComponent(logTable);
                 callbacks.customizeUiComponent(scrollPane);
                 callbacks.customizeUiComponent(tabs);
-                
+                callbacks.customizeUiComponent(panel);
                 stderr=new PrintWriter(callbacks.getStderr(), true);
                 stdout=new PrintWriter(callbacks.getStdout(), true);
                 
                 // add the custom tab to Burp's UI
                
-                callbacks.addSuiteTab(KaliIntegrator.this);
+
                 
+               
                 // register ourselves as an Extension State listener
                 callbacks.registerExtensionStateListener(KaliIntegrator.this); 
-                callbacks.issueAlert("Extension Loaded Successfully");
+                
                 
                 // register ourselves as an HTTP listener
                 callbacks.registerHttpListener(KaliIntegrator.this);
                 
                 // register ourselves as an Context Menu Factory
                 callbacks.registerContextMenuFactory(KaliIntegrator.this);
+               
             }
         });
     }
@@ -131,19 +140,27 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
  
     //
     // implement ITab
-    //
-
-    @Override
+    //oveContextMenuFactory(KaliIntegrator.this);
+	  
+   
+   public void remove() throws Throwable
+   {
+	   callbacks.removeContextMenuFactory(KaliIntegrator.this);
+	   callbacks.removeExtensionStateListener(KaliIntegrator.this);
+	   callbacks.removeHttpListener(KaliIntegrator.this);
+	  
+   }
+   
     public String getTabCaption()
     {
         return this.toolName;
     }
 
-    @Override
+   
     public Component getUiComponent()
     {
     	
-        return splitPane;
+        return this.panel;
     }
 
     //
@@ -522,12 +539,19 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     @Override
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
         
-        JMenuItem menu=new JMenuItem("Send to "+this.toolName);
+        if(this.toolName!="default")
+        {
+    	JMenuItem menu=new JMenuItem("Send to "+this.toolName);
         menu.addActionListener(new MenuItemListener(invocation));
         List<JMenuItem> item=new ArrayList<JMenuItem>();
         item.add(menu);
         return item;
-    }
+        }
+        else
+        {
+        	return null;
+        }
+       }
 
 
     class MenuItemListener extends Thread implements ActionListener
