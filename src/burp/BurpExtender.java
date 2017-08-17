@@ -11,17 +11,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
+
 import javax.swing.plaf.basic.BasicTabbedPaneUI.TabbedPaneLayout;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -50,19 +40,24 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     public JPanel panel=new JPanel();
     private final JLabel label1 = new JLabel("Kali Integrator");
     private final JLabel label2 = new JLabel("Extension that lets you run linux tools on the background for the request received by BurpTool");
+    private final JLabel label6 = new JLabel("CommandList");
     private final JLabel label3 = new JLabel("Command");
     private final JTextField commandField = new JTextField();
     private final JButton Add = new JButton("Add");
     private final JButton Remove = new JButton("Remove");
+    private final JButton commandAdd = new JButton("Add");
+    public JComboBox<String> commandList = new JComboBox();
     private final JLabel label4 = new JLabel("Please enter the Command in the following pattern:\n fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run");
-    private final JLabel label5 = new JLabel("Console");
+    private final JLabel label5 = new JLabel("Active Tool List");
     private final List<CommandEntry> log = new ArrayList<CommandEntry>();
+    private final HashMap<String,String> list = new HashMap<String,String>();
     Table logTable = new Table(BurpExtender.this);
     CommandEntry comnd;
     public JTabbedPaneCloseButton tab=new JTabbedPaneCloseButton();
     public KaliIntegrator fimap[]=new KaliIntegrator[10];
     
     public static int threads=0;
+    public int row=log.size();
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks)
     {
         this.callbacks=callbacks;
@@ -71,53 +66,75 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
         panel.setLayout(null);
         panel.setBackground(Color.WHITE);
           
-        commandField.setBounds(104, 77, 770, 30);
+        
           commandField.setColumns(10);
           
           panel.setLayout(null);
+         
+          
           label1.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 14));
           label1.setForeground(new Color(255, 140, 0));
-          label1.setBounds(12, 12, 600, 24);
-          
+          label1.setBounds(12, 15, 600, 24);
           panel.add(label1);
-          label2.setBounds(12, 35, 620, 30);
           
+          label2.setBounds(12, 45, 620, 30);
           panel.add(label2);
-          label3.setBounds(12, 84, 82, 15);
+          
+          label6.setBounds(12, 75, 620, 30);
+          label6.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
+          panel.add(label6);
+          
+          commandList.setBounds(105,75,500,30);
+          
+          panel.add(commandList);
+          
+          commandAdd.setBounds(900, 75, 120, 30);
+          panel.add(commandAdd);
+       
+          
+          label3.setBounds(12,140, 82, 15);
           label3.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
           panel.add(label3);
           
           panel.add(commandField);
-          Add.setBounds(900, 77, 117, 30);
+          commandField.setBounds(105, 135, 770, 30);
           
-          panel.add(Add);
-          label4.setBounds(12,111, 900, 30);
-          
-          panel.add(label4);
+          label4.setBounds(12,165, 1200, 30);
           label4.setFont(new Font("Lato Light", Font.BOLD, 12));
-          label5.setBounds(12, 147, 375, 40);
+          panel.add(label4);
+          
+          Add.setBounds(900, 135, 117, 30);
+          panel.add(Add);
+          
+          label5.setBounds(12, 185, 375, 70);
           label5.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
           panel.add(label5);
           
+         
           
-      
+          panel.add(Remove);
+          Remove.setBounds(900,250, 117, 30);
           
           
           JScrollPane scrollPane = new JScrollPane(logTable);
           logTable.setAutoCreateRowSorter(true);
-          logTable.setBounds(12, 177, 820, 300);
+          
           logTable.setVisible(true);
           logTable.setGridColor(Color.black);
           logTable.setForeground(Color.BLACK);
           logTable.setAutoCreateColumnsFromModel(true);
-          logTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-          scrollPane.setBounds(12,177,820,466);
+          
+          logTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+          logTable.getColumnModel().getColumn(0).setPreferredWidth(60);
+          logTable.getColumnModel().getColumn(1).setPreferredWidth(800);
+          scrollPane.setBounds(12,250,862,300);
           panel.add(scrollPane);
           
-          panel.add(Remove);
-          Remove.setBounds(900,257, 117, 30);
+          commandList.addItem("Fimap");
+          commandList.addItem("Xsser");
+          list.put("Fimap","fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run");
+          list.put("Xsser","xsser -u \"GET_PARAMETER\" -s");
           
-          int row=log.size();
           
          SwingUtilities.invokeLater(new Runnable() 
          {
@@ -126,6 +143,20 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
              {
                  // main split pane
             	 tab.addTab("Configuration Window",panel);
+            	 
+            	 commandAdd.addActionListener(new ActionListener() {
+         			public void actionPerformed(ActionEvent arg0) {
+         				
+         				if(commandList.getSelectedObjects()==null)
+         				{
+         					label4.setText("Plase select one of the tools from the dropdown list or Enter the command Manually ");
+         				}
+         				else
+         				{
+         					addIntegrator((String)commandList.getSelectedItem(),list.get(commandList.getSelectedItem()),row);
+         				}
+         			}
+         		});
             	 
                  Add.addActionListener(new ActionListener() {
                      public void actionPerformed(ActionEvent arg0) {
@@ -138,28 +169,12 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                          
                          if(cmd.contains("fimap")&&cmd!="")
                          {
-                        	
-                             fimap[threads]=new KaliIntegrator(tab,"Fimap",commandField.getText());
-                             fimap[threads].registerCallbacks(callbacks);
-                            comnd=new CommandEntry(row,commandField.getText());
-                             //textArea.append("Command Addedd Successfully:\n"+commandField.getText());
-                             label4.setText("Success!!");
-                             log.add(comnd);
-                             tab.addTab(fimap[threads].toolName, fimap[threads].getUiComponent());
-                             fireTableRowsInserted(row,row);
-                             threads++;
+                        	 addIntegrator("Fimap",commandField.getText(),row);
+                             
                          }
                          else if(cmd.contains("xsser"))
                          {
-                             fimap[threads]=new KaliIntegrator(tab,"Xsser",commandField.getText());
-                             fimap[threads].registerCallbacks(callbacks);
-                             comnd=new CommandEntry(row,commandField.getText());
-                             //textArea.append("Command Addedd Successfully:\n"+commandField.getText());
-                             log.add(comnd);
-                             label4.setText("Success!!");
-                             tab.addTab(fimap[threads].toolName, fimap[threads].getUiComponent());
-                             fireTableRowsInserted(row,row);
-                             threads++;
+                        	 addIntegrator("Fimap",commandField.getText(),row);
                          }
                          else
                          {
@@ -171,17 +186,19 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                  
                  Remove.addActionListener(new ActionListener() {
                      public void actionPerformed(ActionEvent arg0) {
-                         int select=logTable.getSelectedRow();
-                         if(select==-1 || log.size()==0)
+                    	 int select=log.get(logTable.getSelectedRow()).slno;
+                         int selectedrow=logTable.getSelectedRow();
+                         if(selectedrow==-1 || log.size()==0)
                          {
-                        	 
+                        	 callbacks.issueAlert("Number is cannot"); 
                          }
                          else
                          {
-                        	 log.remove(select);
+                        	 log.remove(selectedrow);
                         	 callbacks.issueAlert("Number is "+select);
+                        	 callbacks.issueAlert("Number is s"+selectedrow);
                         	 try {
-                        		 tab.removeTabAt(select+1);
+                        		 tab.removeTabAt(selectedrow+1);
 								fimap[select].remove();
 							} catch (Throwable e) {
 								// TODO Auto-generated catch block
@@ -190,7 +207,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                         	 
                         	 fimap[select]=new KaliIntegrator();
                    
-                        	 fireTableRowsDeleted(select,select);
+                        	 fireTableRowsDeleted(selectedrow,selectedrow);
                          }
                      }
                  });
@@ -206,13 +223,29 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                  callbacks.customizeUiComponent(Add);
                  callbacks.customizeUiComponent(logTable);
                  callbacks.customizeUiComponent(tab);
+                 callbacks.customizeUiComponent(commandList);
+                 callbacks.customizeUiComponent(label6);
+                 callbacks.customizeUiComponent(commandAdd);
                  callbacks.customizeUiComponent(scrollPane);
-                callbacks.addSuiteTab(BurpExtender.this);
+                 callbacks.addSuiteTab(BurpExtender.this);
                  
              }
          });
         
     }
+    public void addIntegrator(String name,String command,int row)
+    {
+    	fimap[threads]=new KaliIntegrator(name,command);
+        fimap[threads].registerCallbacks(callbacks);
+        comnd=new CommandEntry(threads,command);
+        
+        label4.setText("Success!!");
+        log.add(comnd);
+        tab.addTab(fimap[threads].toolName, fimap[threads].getUiComponent());
+        fireTableRowsInserted(row,row);
+        threads++;
+    }
+    
     @Override
     public String getTabCaption() {
         // TODO Auto-generated method stub
@@ -242,7 +275,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
             switch (columnIndex)
             {
                 case 0:
-                    return "SlNo";
+                    return "Slno";
                 case 1:
                     return "Command";
                 
@@ -266,7 +299,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
             switch (columnIndex)
             {
                 case 0:
-                    return commandEntry.slno+1;
+                    return rowIndex+1;
                 case 1:
                     return commandEntry.command;
                 

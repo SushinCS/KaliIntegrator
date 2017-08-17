@@ -1,5 +1,6 @@
 package burp;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -59,7 +60,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     	
     }
 
-    public KaliIntegrator(JTabbedPaneCloseButton tab,String toolName,String command)
+    public KaliIntegrator(String toolName,String command)
     {
     	this.toolName=toolName;
     	this.command=command;
@@ -86,8 +87,10 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
             public void run()
             {
                 // main split pane
+            	
+            	panel.setLayout(new BorderLayout());
                 splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-                        
+                    
                 // table of log entries
                 Table logTable = new Table(KaliIntegrator.this);
                 logTable.setAutoCreateRowSorter(true);
@@ -145,9 +148,9 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
    
    public void remove() throws Throwable
    {
-	   callbacks.removeContextMenuFactory(KaliIntegrator.this);
-	   callbacks.removeExtensionStateListener(KaliIntegrator.this);
-	   callbacks.removeHttpListener(KaliIntegrator.this);
+	   this.callbacks.removeContextMenuFactory(this);
+	   this.callbacks.removeExtensionStateListener(this);
+	   this.callbacks.removeHttpListener(this);
 	  
    }
    
@@ -431,14 +434,14 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
         {
             // show the log entry for the selected row
             //row=convertRowIndexToView(row);
-            callbacks.issueAlert("row:"+row+"column:"+col);
+            //callbacks.issueAlert("row:"+row+"column:"+col);
             int row1=convertRowIndexToView(row);
             int col1=convertColumnIndexToView(col);
             int row2=convertRowIndexToModel(row);
             int col2=convertColumnIndexToModel(col);
             
-            callbacks.issueAlert("row1:"+row1+"column1:"+col1);
-            callbacks.issueAlert("row2:"+row2+"column2:"+col2);
+            //callbacks.issueAlert("row1:"+row1+"column1:"+col1);
+            //callbacks.issueAlert("row2:"+row2+"column2:"+col2);
             LogEntry logEntry = log.get(row2);
             requestViewer.setMessage(logEntry.requestResponse.getRequest(), true);
             if(logEntry.requestResponse.getResponse()==null)
