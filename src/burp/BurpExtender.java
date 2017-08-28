@@ -6,6 +6,10 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
@@ -46,6 +50,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     private final JButton Add = new JButton("Add");
     private final JButton Remove = new JButton("Remove");
     private final JButton commandAdd = new JButton("Add");
+    public JButton config = new JButton("config");
     public JComboBox<String> commandList = new JComboBox();
     private final JLabel label4 = new JLabel("Please enter the Command in the following pattern:\n fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run");
     private final JLabel label5 = new JLabel("Active Tool List");
@@ -103,8 +108,11 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
           label4.setFont(new Font("Lato Light", Font.BOLD, 12));
           panel.add(label4);
           
-          Add.setBounds(900, 135, 117, 30);
+          Add.setBounds(1050, 135, 117, 30);
           panel.add(Add);
+          
+          config.setBounds(900, 135, 117, 30);
+          panel.add(config);
           
           label5.setBounds(12, 185, 375, 70);
           label5.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
@@ -167,14 +175,11 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                              cmd="";
                          }
                          
-                         if(cmd.contains("fimap")&&cmd!="")
+                         if(cmd!="")
                          {
-                        	 addIntegrator("Fimap",commandField.getText(),row);
+                        	 
+                        	 addIntegrator(cmd.substring(0, cmd.indexOf(" ")),commandField.getText(),row);
                              
-                         }
-                         else if(cmd.contains("xsser"))
-                         {
-                        	 addIntegrator("Fimap",commandField.getText(),row);
                          }
                          else
                          {
@@ -212,6 +217,29 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                      }
                  });
 
+                 
+         		config.addActionListener(new ActionListener() {
+         			public void actionPerformed(ActionEvent e) {
+         				JFileChooser fileChooser = new JFileChooser();
+         				fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+         				int result = fileChooser.showOpenDialog(null);
+         				System.out.println("Selected file: " +result);
+         				if (result == JFileChooser.APPROVE_OPTION) {
+         				    File selectedFile = fileChooser.getSelectedFile();
+         				   try {
+							BufferedReader in = new BufferedReader(new FileReader(selectedFile));
+						} catch (FileNotFoundException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+         				    
+         				    System.out.println("Selected file: " + selectedFile.toString());
+         				}
+         			}
+         		});
+         		
+ 
+         		
                  
                  callbacks.customizeUiComponent(label1);
                  callbacks.customizeUiComponent(label2);
