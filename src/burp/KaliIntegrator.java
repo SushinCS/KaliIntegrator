@@ -52,6 +52,8 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     public IRequestInfo reqinfoObj;
     String param="";
     String cparam="";
+    public String success="";
+    public String failure="";
     public MyRenderer renderer=new MyRenderer();
     public JPanel panel=new JPanel();
     public JTabbedPane tabs = new JTabbedPane();
@@ -60,10 +62,12 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     	
     }
 
-    public KaliIntegrator(String toolName,String command)
+    public KaliIntegrator(String toolName,String command,String success,String failure)
     {
     	this.toolName=toolName;
     	this.command=command;
+    	this.success=success;
+    	this.failure=failure;
          
     }
     //
@@ -183,7 +187,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
             reqinfoObj=helpers.analyzeRequest(messageInfo);
             parameterList=this.paramlist(reqinfoObj);
             
-            synchronized(log)
+            synchronized(this.log)
                {
                   messageInfo.setComment("Processing..");
                    LogEntry beforeProcessing=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
@@ -200,7 +204,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
             }
             else
             {
-              synchronized(loghm)
+              synchronized(this.loghm)
             { 
                   List<String> temp=this.paramlist(reqinfoObj);
                if(loghm.get(reqinfoObj.getUrl())!=null && (temp.containsAll(loghm.get(reqinfoObj.getUrl())))&&(temp.size()!=0))
@@ -234,13 +238,13 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 
                 if(eparamlist.size()!=0)
                 {
-                	synchronized(loghm)
+                	synchronized(this.loghm)
                 	{
                    loghm.put(reqinfoObj.getUrl(),parameterList);
                 	}
                    synchronized(this)
                     {
-                        stdout.println("Scanning the URL for LFI Vulnerability:");
+                        stdout.println("Scanning the Request for Vulnerability:"+this.toolName);
                         output=this.kaliintegrator(reqinfoObj,param,cparam,messageInfo,command);
                         callbacks.issueAlert(output);
                         param="";
@@ -258,7 +262,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 output="Duplicate Link/Already Tested";
             }
             stdout.println("\n\n");
-            synchronized(log)
+            synchronized(this.log)
             {
                 
                 LogEntry afterProcessing=new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), 
@@ -489,11 +493,12 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
         
            PyObject output = interp.get("output");
            stdout.println("Output is: " + output);
-           if(output.toString().contains("Target URL isn't affected by any file inclusion bug :(")&&!(output.toString().contains("Failed: 0")))
+           System.out.println("success: " + this.success+":failure"+this.failure);
+           if(output.toString().contains(this.failure))
            {
                messageInfo.setComment("Not Vulnerable");
            }
-           else if (output.toString().contains("#::VULN INFO")||output.toString().contains("Failed: 0"))
+           else if (output.toString().contains(this.success))
            {
                messageInfo.setHighlight("red");
                messageInfo.setComment("Vulnerable");

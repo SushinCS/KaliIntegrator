@@ -15,7 +15,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
+import java.util.Scanner;
 import javax.swing.plaf.basic.BasicTabbedPaneUI.TabbedPaneLayout;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -60,7 +60,9 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     CommandEntry comnd;
     public JTabbedPaneCloseButton tab=new JTabbedPaneCloseButton();
     public KaliIntegrator fimap[]=new KaliIntegrator[10];
-    
+    public String successStr="";
+    public String failureStr="";
+   
     public static int threads=0;
     public int row=log.size();
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks)
@@ -228,6 +230,11 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
          				    File selectedFile = fileChooser.getSelectedFile();
          				   try {
 							BufferedReader in = new BufferedReader(new FileReader(selectedFile));
+
+							String scan=new Scanner(selectedFile).next();
+							  System.out.println("Selected file: " + scan);
+							
+							
 						} catch (FileNotFoundException e1) {
 							// TODO Auto-generated catch block
 							e1.printStackTrace();
@@ -263,7 +270,19 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     }
     public void addIntegrator(String name,String command,int row)
     {
-    	fimap[threads]=new KaliIntegrator(name,command);
+    	if(name == "fimap")
+    	{
+    		this.successStr="#::VULN INFO";
+    		this.failureStr="Target URL isn't affected by any file inclusion bug";
+    	}
+    	else if(name=="xsser")
+    	{
+    		this.successStr="Failed: 0";
+    		this.failureStr="Could not find any vulnerability";
+    	}
+    	
+    	
+    	fimap[threads]=new KaliIntegrator(name,command,this.successStr,this.failureStr);
         fimap[threads].registerCallbacks(callbacks);
         comnd=new CommandEntry(threads,command);
         
