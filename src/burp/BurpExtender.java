@@ -270,16 +270,17 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     }
     public void addIntegrator(String name,String command,int row)
     {
-    	if(name == "fimap")
+    	if(name == "Fimap")
     	{
     		this.successStr="#::VULN INFO";
     		this.failureStr="Target URL isn't affected by any file inclusion bug";
     	}
-    	else if(name=="xsser")
+    	else if(name=="Xsser")
     	{
     		this.successStr="Failed: 0";
     		this.failureStr="Could not find any vulnerability";
     	}
+    	
     	
     	
     	fimap[threads]=new KaliIntegrator(name,command,this.successStr,this.failureStr);
