@@ -52,7 +52,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     private final JButton commandAdd = new JButton("Add");
     public JButton config = new JButton("config");
     public JComboBox<String> commandList = new JComboBox();
-    private final JLabel label4 = new JLabel("Please enter the Command in the following pattern:\n fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run");
+    private final JLabel label4 = new JLabel("<html><p>Please enter the Command in the following pattern:<br> fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run<br>select the config file containing success and error message Keywords for the tool</p></html>");
     private final JLabel label5 = new JLabel("Active Tool List");
     private final List<CommandEntry> log = new ArrayList<CommandEntry>();
     private final HashMap<String,String> list = new HashMap<String,String>();
@@ -106,17 +106,18 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
           panel.add(commandField);
           commandField.setBounds(105, 135, 770, 30);
           
-          label4.setBounds(12,165, 1200, 30);
+          label4.setBounds(12,165, 1200, 65);
           label4.setFont(new Font("Lato Light", Font.BOLD, 12));
           panel.add(label4);
           
           Add.setBounds(1050, 135, 117, 30);
+          Add.setEnabled(false);
           panel.add(Add);
           
           config.setBounds(900, 135, 117, 30);
           panel.add(config);
           
-          label5.setBounds(12, 185, 375, 70);
+          label5.setBounds(12, 195, 375, 70);
           label5.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
           panel.add(label5);
           
@@ -171,8 +172,13 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                  Add.addActionListener(new ActionListener() {
                      public void actionPerformed(ActionEvent arg0) {
                          String cmd=commandField.getText();
+                         if(cmd==null)
+                         {
+                        	 label4.setText("No Command Set");
+                        	 cmd="";
+                         }
                          
-                         if(!(cmd.contains("POST_PARAMETER")||cmd.contains("GET_PARAMETER")||cmd.contains("COOKIE_PARAMETER"))&& threads>=11)
+                         else if(!(cmd.contains("POST_PARAMETER")||cmd.contains("GET_PARAMETER")||cmd.contains("COOKIE_PARAMETER"))&& threads>=11)
                          {
                              cmd="";
                          }
@@ -222,26 +228,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                  
          		config.addActionListener(new ActionListener() {
          			public void actionPerformed(ActionEvent e) {
-         				JFileChooser fileChooser = new JFileChooser();
-         				fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
-         				int result = fileChooser.showOpenDialog(null);
-         				System.out.println("Selected file: " +result);
-         				if (result == JFileChooser.APPROVE_OPTION) {
-         				    File selectedFile = fileChooser.getSelectedFile();
-         				   try {
-							BufferedReader in = new BufferedReader(new FileReader(selectedFile));
-
-							String scan=new Scanner(selectedFile).next();
-							  System.out.println("Selected file: " + scan);
-							
-							
-						} catch (FileNotFoundException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
-         				    
-         				    System.out.println("Selected file: " + selectedFile.toString());
-         				}
+         			gettext(e);
          			}
          		});
          		
@@ -292,6 +279,45 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
         tab.addTab(fimap[threads].toolName, fimap[threads].getUiComponent());
         fireTableRowsInserted(row,row);
         threads++;
+    }
+    
+    public void gettext(ActionEvent e)
+    {
+    	JFileChooser fileChooser = new JFileChooser();
+			fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+			int result = fileChooser.showOpenDialog(null);
+			System.out.println("Selected file: " +result);
+			if (result == JFileChooser.APPROVE_OPTION) {
+			    File selectedFile = fileChooser.getSelectedFile();
+			   try {
+			Scanner sc=new Scanner(selectedFile);
+			String scan="";
+		    while (sc.hasNextLine()) 
+		    {
+	            scan = scan+sc.nextLine();
+	        }
+			  System.out.println("scan contains " + scan);
+			  
+			this.failureStr=scan.substring(scan.indexOf("--errorstart--"), scan.indexOf("--errorend--"));
+			this.successStr=scan.substring(scan.indexOf("--successstart--"), scan.indexOf("--successend--"));
+			
+			if(failureStr!=null&&successStr!=null&&failureStr!=""&&successStr!="")
+			{
+				Add.setEnabled(true);
+			}
+			else
+			{
+				label4.setText("Config file selected is not valid");
+			}
+			
+			
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+			    
+			    System.out.println("Selected file: " + selectedFile.toString());
+			}
     }
     
     @Override
