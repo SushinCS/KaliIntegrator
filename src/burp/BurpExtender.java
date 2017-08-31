@@ -50,7 +50,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     private final JButton Add = new JButton("Add");
     private final JButton Remove = new JButton("Remove");
     private final JButton commandAdd = new JButton("Add");
-    public JButton config = new JButton("config");
+    public JButton config = new JButton("Config");
     public JComboBox<String> commandList = new JComboBox();
     private final JLabel label4 = new JLabel("<html><p>Please enter the Command in the following pattern:<br> fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run<br>select the config file containing success and error message Keywords for the tool</p></html>");
     private final JLabel label5 = new JLabel("Active Tool List");
@@ -58,7 +58,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     private final HashMap<String,String> list = new HashMap<String,String>();
     Table logTable = new Table(BurpExtender.this);
     CommandEntry comnd;
-    public JTabbedPaneCloseButton tab=new JTabbedPaneCloseButton();
+    public JTabbedPane tab=new JTabbedPane();
     public KaliIntegrator fimap[]=new KaliIntegrator[10];
     public String successStr="";
     public String failureStr="";
@@ -172,22 +172,26 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                  Add.addActionListener(new ActionListener() {
                      public void actionPerformed(ActionEvent arg0) {
                          String cmd=commandField.getText();
-                         if(cmd==null)
+                        
+                         if(cmd==null || cmd.length()<=1)
                          {
+                        
                         	 label4.setText("No Command Set");
                         	 cmd="";
                          }
                          
-                         else if(!(cmd.contains("POST_PARAMETER")||cmd.contains("GET_PARAMETER")||cmd.contains("COOKIE_PARAMETER"))&& threads>=11)
+                         else if(!(cmd.contains("POST_PARAMETER")||cmd.contains("GET_PARAMETER")||cmd.contains("COOKIE_PARAMETER"))|| threads>=11)
                          {
-                             cmd="";
+                             cmd="wrongformat";
+                             label4.setText("Command is not specified in requested format");
                          }
+
                          
-                         if(cmd!="")
+                         if(cmd!="" && cmd!="wrongformat")
                          {
-                        	 
-                        	 addIntegrator(cmd.substring(0, cmd.indexOf(" ")),commandField.getText(),row);
-                             
+                        	
+                        	 addIntegrator(cmd.substring(0, cmd.indexOf(" ")),cmd,row);
+                        	 label4.setText("Command Added Successfully");
                          }
                          else
                          {
@@ -298,8 +302,8 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
 	        }
 			  System.out.println("scan contains " + scan);
 			  
-			this.failureStr=scan.substring(scan.indexOf("--errorstart--"), scan.indexOf("--errorend--"));
-			this.successStr=scan.substring(scan.indexOf("--successstart--"), scan.indexOf("--successend--"));
+			this.failureStr=scan.substring(scan.indexOf("--errorstart--")+14, scan.indexOf("--errorend--"));
+			this.successStr=scan.substring(scan.indexOf("--successstart--")+16, scan.indexOf("--successend--"));
 			
 			if(failureStr!=null&&successStr!=null&&failureStr!=""&&successStr!="")
 			{

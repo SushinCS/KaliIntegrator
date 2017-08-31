@@ -8,6 +8,20 @@ import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import javax.swing.JTextField;
+import java.awt.FlowLayout;
+import javax.swing.JTable;
+import javax.swing.JSpinner;
+import javax.swing.JTree;
+import javax.swing.JTextArea;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import java.awt.BorderLayout;
+import javax.swing.JCheckBox;
+import javax.swing.JToggleButton;
+import javax.swing.JLabel;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class sss extends JPanel {
 
@@ -18,38 +32,18 @@ public class sss extends JPanel {
 	 private int mode;
 	    public static final int MODE_OPEN = 1;
 	    public static final int MODE_SAVE = 2;
-	    private JTextField textField;
 	public sss() {
-		setLayout(null);
+		setLayout(new BorderLayout(0, 0));
 		
-		JButton btnNewButton = new JButton("New button");
-		btnNewButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				
-				  buttonActionPerformed(e); 
+		JCheckBox chckbxNewCheckBox = new JCheckBox("New check box");
+		chckbxNewCheckBox.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
 			}
 		});
-		btnNewButton.setBounds(85, 76, 117, 25);
-		add(btnNewButton);
-		
-		textField = new JTextField();
-		textField.setBounds(286, 188, 114, 19);
-		add(textField);
-		textField.setColumns(10);
+		add(chckbxNewCheckBox, BorderLayout.CENTER);
 		
 		
 
 	}
-	
-	 private void buttonActionPerformed(ActionEvent evt) {
-	        if (MODE_OPEN==1) {
-	            if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-	                textField.setText(fileChooser.getSelectedFile().getAbsolutePath());
-	            }
-	        } else if (MODE_SAVE==1) {
-	            if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-	                textField.setText(fileChooser.getSelectedFile().getAbsolutePath());
-	            }
-	        }
-	    }
 }

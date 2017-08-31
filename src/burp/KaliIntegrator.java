@@ -3,6 +3,7 @@ package burp;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.PrintWriter;
@@ -10,6 +11,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -40,7 +43,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     public IExtensionHelpers helpers;
     public JSplitPane splitPane;
     public IMessageEditor requestViewer;
-   public  IMessageEditor responseViewer;
+    public IMessageEditor responseViewer;
     public ITextEditor resultViewer;
     public final List<LogEntry> log = new ArrayList<LogEntry>();
     public List<String> parameterList = new ArrayList<String>();
@@ -50,13 +53,16 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     public PrintWriter stdout;
     public IRequestInfo reqinfoObjk;
     public IRequestInfo reqinfoObj;
-    String param="";
-    String cparam="";
+    public String param="";
+    public String cparam="";
     public String success="";
     public String failure="";
     public MyRenderer renderer=new MyRenderer();
     public JPanel panel=new JPanel();
+    public JPanel insidepanel=new JPanel();
     public JTabbedPane tabs = new JTabbedPane();
+    public JCheckBox checkbox = new JCheckBox();
+    public JLabel checkboxlabel = new JLabel("On the Go Processing");
     public KaliIntegrator()
     {
     	
@@ -93,6 +99,24 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 // main split pane
             	
             	panel.setLayout(new BorderLayout());
+            	insidepanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+            	checkbox.setEnabled(true);
+            	
+            	checkbox.addActionListener(new ActionListener() {
+         			public void actionPerformed(ActionEvent e) {
+         			if(checkbox.isSelected())
+         			{
+         				callbacks.registerHttpListener(KaliIntegrator.this);
+         			}
+         			else
+         			{
+         				callbacks.removeHttpListener(KaliIntegrator.this);
+         			}
+         			}
+         		});
+            	
+            	insidepanel.add(checkboxlabel);
+            	insidepanel.add(checkbox);
                 splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
                     
                 // table of log entries
@@ -102,6 +126,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 logTable.setAlignmentY(JTable.LEFT_ALIGNMENT);
                 logTable.setDefaultRenderer(Object.class, renderer);
                 JScrollPane scrollPane = new JScrollPane(logTable);
+               
                 splitPane.setLeftComponent(scrollPane);
 
                 // tabs with request/response viewers
@@ -114,13 +139,15 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 tabs.addTab("Vulnerablity Status",resultViewer.getComponent());
                 splitPane.setRightComponent(tabs);
 
-               panel.add(splitPane);
+                panel.add(insidepanel,BorderLayout.NORTH);
+                panel.add(splitPane,BorderLayout.CENTER);
                 // customize our UI components
                 callbacks.customizeUiComponent(splitPane);
                 callbacks.customizeUiComponent(logTable);
                 callbacks.customizeUiComponent(scrollPane);
                 callbacks.customizeUiComponent(tabs);
                 callbacks.customizeUiComponent(panel);
+                callbacks.customizeUiComponent(checkbox);
                 stderr=new PrintWriter(callbacks.getStderr(), true);
                 stdout=new PrintWriter(callbacks.getStdout(), true);
                 
@@ -493,7 +520,6 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
         
            PyObject output = interp.get("output");
            stdout.println("Output is: " + output);
-           System.out.println("success: " + this.success+":failure"+this.failure);
            if(output.toString().contains(this.failure))
            {
                messageInfo.setComment("Not Vulnerable");
