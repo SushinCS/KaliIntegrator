@@ -99,7 +99,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 // main split pane
             	
             	panel.setLayout(new BorderLayout());
-            	insidepanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+            	insidepanel.setLayout(new FlowLayout(FlowLayout.CENTER, 6, 5));
             	checkbox.setEnabled(true);
             	
             	checkbox.addActionListener(new ActionListener() {
