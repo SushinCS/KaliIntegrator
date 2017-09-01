@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tool>
+<command>
+<name>Fimap</name>
+<cmd>fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run</cmd>
+<success>#::VULN INFO</success>
+<failure>Target URL isn't affected by any file inclusion bug</failure>
+</command>
+<command>
+<name>Xsser</name>
+<cmd>xsser -u \"GET_PARAMETER\" -s</cmd>
+<success>Failed: 0</success>
+<failure>Could not find any vulnerability</failure>
+</command>
+</tool>

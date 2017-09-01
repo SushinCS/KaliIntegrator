@@ -1,6 +1,9 @@
 package burp;
 
 import java.awt.Color;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.DocumentBuilder;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -10,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
@@ -21,11 +25,24 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 import org.python.bouncycastle.util.Arrays;
 import org.python.core.PyObject;
 import org.python.core.PyString;
 import org.python.util.PythonInterpreter;
 import burp.KaliIntegrator;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException; 
+
+import java.io.File;
+import org.w3c.dom.Document;
+import org.w3c.dom.*; 
+
 import javax.swing.*;
 import javax.swing.plaf.metal.MetalIconFactory;
 import java.awt.*;
@@ -50,12 +67,13 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     private final JButton Add = new JButton("Add");
     private final JButton Remove = new JButton("Remove");
     private final JButton commandAdd = new JButton("Add");
-    public JButton config = new JButton("Config");
+    private final JButton config = new JButton("Config");
+    private final JButton lconfig = new JButton("LConfig");
     public JComboBox<String> commandList = new JComboBox();
     private final JLabel label4 = new JLabel("<html><p>Please enter the Command in the following pattern:<br> fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run<br>select the config file containing success and error message Keywords for the tool</p></html>");
     private final JLabel label5 = new JLabel("Active Tool List");
     private final List<CommandEntry> log = new ArrayList<CommandEntry>();
-    private final HashMap<String,String> list = new HashMap<String,String>();
+    private final HashMap<String,String[]> list = new HashMap<String,String[]>();
     Table logTable = new Table(BurpExtender.this);
     CommandEntry comnd;
     public JTabbedPane tab=new JTabbedPane();
@@ -94,6 +112,8 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
           commandList.setBounds(105,75,500,30);
           
           panel.add(commandList);
+          commandList.addItem("--Select--");
+     
           
           commandAdd.setBounds(900, 75, 120, 30);
           panel.add(commandAdd);
@@ -116,6 +136,9 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
           
           config.setBounds(900, 135, 117, 30);
           panel.add(config);
+          
+          lconfig.setBounds(1050, 75, 117, 30);
+          panel.add(lconfig);
           
           label5.setBounds(12, 195, 375, 70);
           label5.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
@@ -141,10 +164,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
           scrollPane.setBounds(12,250,862,300);
           panel.add(scrollPane);
           
-          commandList.addItem("Fimap");
-          commandList.addItem("Xsser");
-          list.put("Fimap","fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run");
-          list.put("Xsser","xsser -u \"GET_PARAMETER\" -s");
+      
           
           
          SwingUtilities.invokeLater(new Runnable() 
@@ -158,13 +178,15 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
             	 commandAdd.addActionListener(new ActionListener() {
          			public void actionPerformed(ActionEvent arg0) {
          				
-         				if(commandList.getSelectedObjects()==null)
+         				if(commandList.getSelectedItem()==null||commandList.getSelectedItem()=="--Select--")
          				{
-         					label4.setText("Plase select one of the tools from the dropdown list or Enter the command Manually ");
+         					label4.setText("Please select one of the tools from the dropdown list or Enter the command Manually ");
          				}
          				else
          				{
-         					addIntegrator((String)commandList.getSelectedItem(),list.get(commandList.getSelectedItem()),row);
+         					
+         					String[] temp=list.get(commandList.getSelectedItem());
+         					addIntegrator(temp[0],temp[1],row);
          				}
          			}
          		});
@@ -236,7 +258,13 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
          			}
          		});
          		
- 
+         		lconfig.addActionListener(new ActionListener() {
+         			public void actionPerformed(ActionEvent e) {
+         			processXML(e);
+         			
+         			}
+         		});
+         		
          		
                  
                  callbacks.customizeUiComponent(label1);
@@ -261,7 +289,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     }
     public void addIntegrator(String name,String command,int row)
     {
-    	if(name == "Fimap")
+    	/*if(name == "Fimap")
     	{
     		this.successStr="#::VULN INFO";
     		this.failureStr="Target URL isn't affected by any file inclusion bug";
@@ -270,7 +298,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     	{
     		this.successStr="Failed: 0";
     		this.failureStr="Could not find any vulnerability";
-    	}
+    	}*/
     	
     	
     	
@@ -283,6 +311,106 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
         tab.addTab(fimap[threads].toolName, fimap[threads].getUiComponent());
         fireTableRowsInserted(row,row);
         threads++;
+    }
+    
+
+    public void processXML (ActionEvent evt){
+    	try {
+
+    		File selectedFile =null;
+    		selectedFile=this.getfile();
+    		if(selectedFile!=null)
+    		{
+                DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+    	        DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+    	        Document doc = docBuilder.parse (selectedFile);
+
+    	        // normalize text representation
+    	        doc.getDocumentElement ().normalize ();
+    	        System.out.println ("Root element of the doc is " + doc.getDocumentElement().getNodeName());
+
+
+    	        NodeList commandList = doc.getElementsByTagName("command");
+    	        int length = commandList.getLength();
+    	        String[] temp=new String[5];
+    	        System.out.println("Total no of commands : " + length);
+
+    	        for(int s=0; s<length ; s++){
+
+
+    	            Node command = commandList.item(s);
+    	            if(command.getNodeType() == Node.ELEMENT_NODE){
+
+
+    	                Element commandElement = (Element)command;
+
+    	                //-------
+    	                NodeList namenode = (commandElement).getElementsByTagName("name");
+    	                Element nameElement = (Element)namenode.item(0);
+
+    	                NodeList nameList = nameElement.getChildNodes();
+    	                System.out.println("name : " + ((Node)nameList.item(0)).getNodeValue().trim());
+    	                temp[0]=((Node)nameList.item(0)).getNodeValue().trim();
+    	                //-------
+    	                NodeList cmdnode = commandElement.getElementsByTagName("cmd");
+    	                Element cmdElement = (Element)cmdnode.item(0);
+
+    	                NodeList cmdList = cmdElement.getChildNodes();
+    	                System.out.println("cmd: " + ((Node)cmdList.item(0)).getNodeValue().trim());
+    	                temp[1]=((Node)cmdList.item(0)).getNodeValue().trim();
+    	                //----
+    	                NodeList successNode = commandElement.getElementsByTagName("success");
+    	                Element successElement = (Element)successNode.item(0);
+
+    	                NodeList successList = successElement.getChildNodes();
+    	                System.out.println("Success: " + ((Node)successList.item(0)).getNodeValue().trim());
+    	                temp[2]=((Node)successList.item(0)).getNodeValue().trim();
+    	                //------
+    	                
+    	                NodeList failureNode = commandElement.getElementsByTagName("failure");
+    	                Element failureElement = (Element)failureNode.item(0);
+    	                NodeList failureList = failureElement.getChildNodes();
+    	                System.out.println("Failure : " + ((Node)failureList.item(0)).getNodeValue().trim());
+    	                temp[3]=((Node)failureList.item(0)).getNodeValue().trim();
+    	                
+    	                this.commandList.addItem(temp[0]);
+    	                list.put(temp[0],temp);
+    	              
+
+    	            }//end of if clause
+    	        }
+
+    	        }//end of for loop with s var
+
+
+    	    }catch (SAXParseException err) {
+    	    System.out.println ("** Parsing error" + ", line " + err.getLineNumber () + ", uri " + err.getSystemId ());
+    	    System.out.println(" " + err.getMessage ());
+
+    	    }catch (SAXException e) {
+    	    Exception x = e.getException ();
+    	    ((x == null) ? e : x).printStackTrace ();
+
+    	    }
+    	catch (Throwable t) {
+    	    t.printStackTrace ();
+    	    }
+
+    	    //System.exit (0);
+
+    	}
+    
+    public File getfile()
+    {
+    	JFileChooser fileChooser = new JFileChooser();
+    	File selectedFile =null;
+		fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+		int result = fileChooser.showOpenDialog(null);
+		if (result == JFileChooser.APPROVE_OPTION) 
+		{
+		   selectedFile = fileChooser.getSelectedFile();   
+		}
+		return selectedFile;	
     }
     
     public void gettext(ActionEvent e)
