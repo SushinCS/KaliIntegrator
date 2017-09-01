@@ -63,6 +63,8 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     public JTabbedPane tabs = new JTabbedPane();
     public JCheckBox checkbox = new JCheckBox();
     public JLabel checkboxlabel = new JLabel("On the Go Processing");
+    
+    
     public KaliIntegrator()
     {
     	
@@ -84,10 +86,8 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     {
         // keep a reference to our callbacks object
         this.callbacks = callbacks;
-        
         // obtain an extension helpers object
         helpers = callbacks.getHelpers();
-        
         // set our extension name
         callbacks.setExtensionName(this.toolName);
         // create our UI
@@ -101,7 +101,6 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
             	panel.setLayout(new BorderLayout());
             	insidepanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
             	checkbox.setEnabled(true);
-            	
             	checkbox.addActionListener(new ActionListener() {
          			public void actionPerformed(ActionEvent e) {
          			if(checkbox.isSelected())
@@ -126,7 +125,6 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 logTable.setAlignmentY(JTable.LEFT_ALIGNMENT);
                 logTable.setDefaultRenderer(Object.class, renderer);
                 JScrollPane scrollPane = new JScrollPane(logTable);
-               
                 splitPane.setLeftComponent(scrollPane);
 
                 // tabs with request/response viewers
@@ -153,9 +151,6 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
                 
                 // add the custom tab to Burp's UI
                
-
-                
-               
                 // register ourselves as an Extension State listener
                 callbacks.registerExtensionStateListener(KaliIntegrator.this); 
                 
@@ -170,8 +165,26 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
         });
     }
 
+    void stop()
+    {
+    	 callbacks.removeExtensionStateListener(KaliIntegrator.this); 
+
+         callbacks.removeHttpListener(KaliIntegrator.this);
+         
+         callbacks.removeContextMenuFactory(KaliIntegrator.this);
+    }
     
- 
+    void start()
+    {
+        callbacks.registerExtensionStateListener(KaliIntegrator.this); 
+        
+        
+
+        callbacks.registerHttpListener(KaliIntegrator.this);
+        
+      
+        callbacks.registerContextMenuFactory(KaliIntegrator.this);
+    }
     //
     // implement ITab
     //oveContextMenuFactory(KaliIntegrator.this);

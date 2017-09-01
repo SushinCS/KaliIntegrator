@@ -38,11 +38,9 @@ import org.python.util.PythonInterpreter;
 import burp.KaliIntegrator;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException; 
-
 import java.io.File;
 import org.w3c.dom.Document;
 import org.w3c.dom.*; 
-
 import javax.swing.*;
 import javax.swing.plaf.metal.MetalIconFactory;
 import java.awt.*;
