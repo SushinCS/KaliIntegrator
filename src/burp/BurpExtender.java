@@ -59,17 +59,19 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     public JPanel panel=new JPanel();
     private final JLabel label1 = new JLabel("Kali Integrator");
     private final JLabel label2 = new JLabel("Extension that lets you run linux tools on the background for the request received by BurpTool");
-    private final JLabel label6 = new JLabel("CommandList");
     private final JLabel label3 = new JLabel("Command");
-    private final JTextField commandField = new JTextField();
-    private final JButton Add = new JButton("Add");
-    private final JButton Remove = new JButton("Remove");
-    private final JButton commandAdd = new JButton("Add");
-    private final JButton config = new JButton("Config");
-    private final JButton lconfig = new JButton("LConfig");
-    public JComboBox<String> commandList = new JComboBox();
     private final JLabel label4 = new JLabel("<html><p>Please enter the Command in the following pattern:<br> fimap --url=GET_PARAMETER --post='POST_PARAMETER' --cookie='COOKIE_PARAMETER' --force-run<br>select the config file containing success and error message Keywords for the tool</p></html>");
     private final JLabel label5 = new JLabel("Active Tool List");
+    private final JLabel label6 = new JLabel("CommandList");
+    
+    private final JButton lconfig = new JButton("Load from Config file");
+    private final JButton commandAdd = new JButton("Add"); 
+    private final JTextField commandField = new JTextField();
+    private final JButton config = new JButton("Config");
+    private final JButton Add = new JButton("Add");
+    private final JButton Remove = new JButton("Remove");
+    public JComboBox<String> commandList = new JComboBox();
+    
     private final List<CommandEntry> log = new ArrayList<CommandEntry>();
     private final HashMap<String,String[]> list = new HashMap<String,String[]>();
     Table logTable = new Table(BurpExtender.this);
@@ -78,9 +80,9 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     public KaliIntegrator fimap[]=new KaliIntegrator[10];
     public String successStr="";
     public String failureStr="";
-   
     public static int threads=0;
     public int row=log.size();
+    
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks)
     {
         this.callbacks=callbacks;
@@ -91,29 +93,33 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
           
         
           commandField.setColumns(10);
-          
           panel.setLayout(null);
          
           
           label1.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 14));
           label1.setForeground(new Color(255, 140, 0));
-          label1.setBounds(12, 15, 600, 24);
+          label1.setBounds(12, 10, 600, 24);
           panel.add(label1);
           
-          label2.setBounds(12, 45, 620, 30);
+          label2.setBounds(12, 40, 620, 30);
           panel.add(label2);
           
-          label6.setBounds(12, 75, 620, 30);
+          
+          lconfig.setBounds(12, 70, 117, 50);
+          panel.add(lconfig); 
+          
+          
+          label6.setBounds(12, 100, 620, 30);
           label6.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
           panel.add(label6);
           
-          commandList.setBounds(105,75,500,30);
+          commandList.setBounds(105,100,500,30);
           
           panel.add(commandList);
           commandList.addItem("--Select--");
      
           
-          commandAdd.setBounds(900, 75, 120, 30);
+          commandAdd.setBounds(900, 100, 120, 30);
           panel.add(commandAdd);
        
           
@@ -135,8 +141,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
           config.setBounds(900, 135, 117, 30);
           panel.add(config);
           
-          lconfig.setBounds(1050, 75, 117, 30);
-          panel.add(lconfig);
+          
           
           label5.setBounds(12, 195, 375, 70);
           label5.setFont(new Font("DejaVu Sans Condensed", Font.BOLD, 12));
