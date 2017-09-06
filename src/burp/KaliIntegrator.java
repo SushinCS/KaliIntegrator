@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -63,6 +64,10 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     public JTabbedPane tabs = new JTabbedPane();
     public JCheckBox checkbox = new JCheckBox();
     public JLabel checkboxlabel = new JLabel("On the Go Processing");
+    private final JButton Start = new JButton("Start");
+    private final JButton Stop = new JButton("Stop");
+    private final JButton config = new JButton("Config");
+    
     
     
     public KaliIntegrator()
@@ -101,6 +106,19 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
             	panel.setLayout(new BorderLayout());
             	insidepanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
             	checkbox.setEnabled(true);
+            	
+            	
+            	
+            	insidepanel.add(Start);
+            	Start.setBounds(900, 100, 120, 30);
+            	insidepanel.add(Stop);
+            	Stop.setBounds(900, 100, 120, 30);
+            	insidepanel.add(config);
+            	config.setBounds(900, 100, 120, 30);
+            	insidepanel.add(checkboxlabel);
+            	insidepanel.add(checkbox);
+            	checkbox.setSelected(true);
+            	
             	checkbox.addActionListener(new ActionListener() {
          			public void actionPerformed(ActionEvent e) {
          			if(checkbox.isSelected())
@@ -114,9 +132,18 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
          			}
          		});
             	
-            	insidepanel.add(checkboxlabel);
-            	insidepanel.add(checkbox);
-            	checkbox.setSelected(true);;
+            	Start.addActionListener(new ActionListener() {
+         			public void actionPerformed(ActionEvent e) {
+         				start();
+         			}
+         		});
+            	
+            	Stop.addActionListener(new ActionListener() {
+         			public void actionPerformed(ActionEvent e) {
+         				stop();
+         			}
+         		});
+            	
                 splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
                     
                 // table of log entries
@@ -178,12 +205,9 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     void start()
     {
         callbacks.registerExtensionStateListener(KaliIntegrator.this); 
-        
-        
 
         callbacks.registerHttpListener(KaliIntegrator.this);
-        
-      
+
         callbacks.registerContextMenuFactory(KaliIntegrator.this);
     }
     //
