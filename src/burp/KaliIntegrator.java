@@ -116,6 +116,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
             	
             	insidepanel.add(checkboxlabel);
             	insidepanel.add(checkbox);
+            	checkbox.setSelected(true);;
                 splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
                     
                 // table of log entries

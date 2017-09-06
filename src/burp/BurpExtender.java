@@ -72,8 +72,9 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     private final JButton Remove = new JButton("Remove");
     public JComboBox<String> commandList = new JComboBox();
     
-    private final List<CommandEntry> log = new ArrayList<CommandEntry>();
-    private final HashMap<String,String[]> list = new HashMap<String,String[]>();
+    private  List<CommandEntry> log = new ArrayList<CommandEntry>();
+    private  HashMap<String,String[]> list = new HashMap<String,String[]>();
+    
     Table logTable = new Table(BurpExtender.this);
     CommandEntry comnd;
     public JTabbedPane tab=new JTabbedPane();
@@ -105,7 +106,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
           panel.add(label2);
           
           
-          lconfig.setBounds(12, 70, 117, 50);
+          lconfig.setBounds(12, 70, 200, 30);
           panel.add(lconfig); 
           
           
@@ -188,8 +189,9 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
          				else
          				{
          					
-         					String[] temp=list.get(commandList.getSelectedItem());
-         					addIntegrator(temp[0],temp[1],row);
+         					String[] templist=list.get(commandList.getSelectedItem());
+         					setString(templist[2],templist[3]);
+         					addIntegrator(templist[0],templist[1],row);
          				}
          			}
          		});
@@ -197,24 +199,9 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                  Add.addActionListener(new ActionListener() {
                      public void actionPerformed(ActionEvent arg0) {
                          String cmd=commandField.getText();
-                        
-                         if(cmd==null || cmd.length()<=1)
-                         {
-                        
-                        	 label4.setText("No Command Set");
-                        	 cmd="";
-                         }
-                         
-                         else if(!(cmd.contains("POST_PARAMETER")||cmd.contains("GET_PARAMETER")||cmd.contains("COOKIE_PARAMETER"))|| threads>=11)
-                         {
-                             cmd="wrongformat";
-                             label4.setText("Command is not specified in requested format");
-                         }
 
-                         
-                         if(cmd!="" && cmd!="wrongformat")
+                         if(validateCommand(cmd))
                          {
-                        	
                         	 addIntegrator(cmd.substring(0, cmd.indexOf(" ")),cmd,row);
                         	 label4.setText("Command Added Successfully");
                          }
@@ -257,31 +244,41 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
                  
          		config.addActionListener(new ActionListener() {
          			public void actionPerformed(ActionEvent e) {
-         			gettext(e);
+         				HashMap<String,String[]> processedlist = new HashMap<String,String[]>();
+         				 processedlist=processXML(e);
+         				 String[] temp=processedlist.get(processedlist.keySet());
+         				 setString(temp[2],temp[3]);
          			}
          		});
          		
          		lconfig.addActionListener(new ActionListener() {
          			public void actionPerformed(ActionEvent e) {
-         			processXML(e);
-         			
+         		  HashMap<String,String[]> processedlist = new HashMap<String,String[]>();
+         		 processedlist=processXML(e);
+         			if(processedlist.size()!=0)
+         			{
+         				list.putAll(processedlist);
+         			}
+         			else
+         			{
+         				label4.setText("Error Occured");
+         			}
          			}
          		});
          		
          		
-                 
+                 callbacks.customizeUiComponent(panel);      
                  callbacks.customizeUiComponent(label1);
                  callbacks.customizeUiComponent(label2);
                  callbacks.customizeUiComponent(label3);
                  callbacks.customizeUiComponent(label4);
                  callbacks.customizeUiComponent(label5);
-                 callbacks.customizeUiComponent(panel);
+                 callbacks.customizeUiComponent(label6);
                  callbacks.customizeUiComponent(commandField);
                  callbacks.customizeUiComponent(Add);
                  callbacks.customizeUiComponent(logTable);
                  callbacks.customizeUiComponent(tab);
                  callbacks.customizeUiComponent(commandList);
-                 callbacks.customizeUiComponent(label6);
                  callbacks.customizeUiComponent(commandAdd);
                  callbacks.customizeUiComponent(scrollPane);
                  callbacks.addSuiteTab(BurpExtender.this);
@@ -292,19 +289,6 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     }
     public void addIntegrator(String name,String command,int row)
     {
-    	/*if(name == "Fimap")
-    	{
-    		this.successStr="#::VULN INFO";
-    		this.failureStr="Target URL isn't affected by any file inclusion bug";
-    	}
-    	else if(name=="Xsser")
-    	{
-    		this.successStr="Failed: 0";
-    		this.failureStr="Could not find any vulnerability";
-    	}*/
-    	
-    	
-    	
     	fimap[threads]=new KaliIntegrator(name,command,this.successStr,this.failureStr);
         fimap[threads].registerCallbacks(callbacks);
         comnd=new CommandEntry(threads,command);
@@ -316,12 +300,37 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
         threads++;
     }
     
+    public boolean validateCommand(String cmd)
+    {
+        if(cmd==null || cmd.length()<=1)
+        {
+       
+       	 label4.setText("No Command Set");
+       	 cmd="";
+       	 return false;
+        }
+        
+        else if(!(cmd.contains("POST_PARAMETER")||cmd.contains("GET_PARAMETER")||cmd.contains("COOKIE_PARAMETER"))|| threads>=11)
+        {
+            cmd="wrongformat";
+            label4.setText("Command is not specified in requested format");
+            return false;
+        }
+        else
+        {
+        	return true;
+        }
+    }
+    
 
-    public void processXML (ActionEvent evt){
+    public HashMap<String,String[]> processXML (ActionEvent evt)
+    {HashMap<String,String[]> templist = new HashMap<String,String[]>();
+    	
     	try {
-
+    		
+        	
     		File selectedFile =null;
-    		selectedFile=this.getfile();
+    		selectedFile=this.getfile();   		
     		if(selectedFile!=null)
     		{
                 DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -335,7 +344,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
 
     	        NodeList commandList = doc.getElementsByTagName("command");
     	        int length = commandList.getLength();
-    	        String[] temp=new String[5];
+    	      
     	        System.out.println("Total no of commands : " + length);
 
     	        for(int s=0; s<length ; s++){
@@ -344,7 +353,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     	            Node command = commandList.item(s);
     	            if(command.getNodeType() == Node.ELEMENT_NODE){
 
-
+                       String[] temp=new String[5];
     	                Element commandElement = (Element)command;
 
     	                //-------
@@ -354,6 +363,8 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     	                NodeList nameList = nameElement.getChildNodes();
     	                System.out.println("name : " + ((Node)nameList.item(0)).getNodeValue().trim());
     	                temp[0]=((Node)nameList.item(0)).getNodeValue().trim();
+
+    	                
     	                //-------
     	                NodeList cmdnode = commandElement.getElementsByTagName("cmd");
     	                Element cmdElement = (Element)cmdnode.item(0);
@@ -361,6 +372,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     	                NodeList cmdList = cmdElement.getChildNodes();
     	                System.out.println("cmd: " + ((Node)cmdList.item(0)).getNodeValue().trim());
     	                temp[1]=((Node)cmdList.item(0)).getNodeValue().trim();
+    	               
     	                //----
     	                NodeList successNode = commandElement.getElementsByTagName("success");
     	                Element successElement = (Element)successNode.item(0);
@@ -376,29 +388,32 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     	                System.out.println("Failure : " + ((Node)failureList.item(0)).getNodeValue().trim());
     	                temp[3]=((Node)failureList.item(0)).getNodeValue().trim();
     	                
-    	                this.commandList.addItem(temp[0]);
-    	                list.put(temp[0],temp);
+    	                this.commandList.addItem(temp[0]);   	               
+    	                templist.put(temp[0],temp);
     	              
-
     	            }//end of if clause
-    	        }
-
+    	        } 
     	        }//end of for loop with s var
 
 
     	    }catch (SAXParseException err) {
     	    System.out.println ("** Parsing error" + ", line " + err.getLineNumber () + ", uri " + err.getSystemId ());
     	    System.out.println(" " + err.getMessage ());
+    	    label4.setText("Parsing error occured");
 
     	    }catch (SAXException e) {
     	    Exception x = e.getException ();
     	    ((x == null) ? e : x).printStackTrace ();
+    	    label4.setText("Parsing error occured");
 
     	    }
     	catch (Throwable t) {
     	    t.printStackTrace ();
+    	    label4.setText("Parsing error occured");
     	    }
-
+		System.out.println("size"+templist.size());
+    	return templist;
+         
     	    //System.exit (0);
 
     	}
@@ -416,45 +431,13 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
 		return selectedFile;	
     }
     
-    public void gettext(ActionEvent e)
-    {
-    	JFileChooser fileChooser = new JFileChooser();
-			fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
-			int result = fileChooser.showOpenDialog(null);
-			System.out.println("Selected file: " +result);
-			if (result == JFileChooser.APPROVE_OPTION) {
-			    File selectedFile = fileChooser.getSelectedFile();
-			   try {
-			Scanner sc=new Scanner(selectedFile);
-			String scan="";
-		    while (sc.hasNextLine()) 
-		    {
-	            scan = scan+sc.nextLine();
-	        }
-			  System.out.println("scan contains " + scan);
-			  
-			this.failureStr=scan.substring(scan.indexOf("--errorstart--")+14, scan.indexOf("--errorend--"));
-			this.successStr=scan.substring(scan.indexOf("--successstart--")+16, scan.indexOf("--successend--"));
-			
-			if(failureStr!=null&&successStr!=null&&failureStr!=""&&successStr!="")
-			{
-				Add.setEnabled(true);
-			}
-			else
-			{
-				label4.setText("Config file selected is not valid");
-			}
-			
-			
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-			    
-			    System.out.println("Selected file: " + selectedFile.toString());
-			}
-    }
+
     
+    public void setString(String success, String failure)
+    {
+    	this.successStr=success;
+    	this.failureStr=failure;
+    }
     @Override
     public String getTabCaption() {
         // TODO Auto-generated method stub
