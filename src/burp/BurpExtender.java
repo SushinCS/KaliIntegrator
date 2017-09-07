@@ -246,8 +246,13 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
          			public void actionPerformed(ActionEvent e) {
          				HashMap<String,String[]> processedlist = new HashMap<String,String[]>();
          				 processedlist=processXML(e);
-         				 String[] temp=processedlist.get(processedlist.keySet());
-         				 setString(temp[2],temp[3]);
+         				 
+         				 for(String key:processedlist.keySet())
+         				 {
+         					String[] temp=processedlist.get(key); 
+         					setString(temp[2],temp[3]);	
+         				 }
+	              Add.setEnabled(true);
          			}
          		});
          		
@@ -258,6 +263,8 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
          			if(processedlist.size()!=0)
          			{
          				list.putAll(processedlist);
+         				addCommandList(processedlist);
+         				 
          			}
          			else
          			{
@@ -292,7 +299,6 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     	fimap[threads]=new KaliIntegrator(name,command,this.successStr,this.failureStr);
         fimap[threads].registerCallbacks(callbacks);
         comnd=new CommandEntry(threads,command);
-        
         label4.setText("Success!!");
         log.add(comnd);
         tab.addTab(fimap[threads].toolName, fimap[threads].getUiComponent());
@@ -322,9 +328,19 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
         }
     }
     
-
+  public void addCommandList(HashMap<String,String[]> templist)
+  {
+	  for(String key:templist.keySet())
+		 {
+			String[] temp=templist.get(key); 
+			 this.commandList.addItem(temp[0]); 
+		 }
+	 
+  }
     public HashMap<String,String[]> processXML (ActionEvent evt)
-    {HashMap<String,String[]> templist = new HashMap<String,String[]>();
+    
+    {
+    	HashMap<String,String[]> templist = new HashMap<String,String[]>();
     	
     	try {
     		
@@ -388,7 +404,7 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     	                System.out.println("Failure : " + ((Node)failureList.item(0)).getNodeValue().trim());
     	                temp[3]=((Node)failureList.item(0)).getNodeValue().trim();
     	                
-    	                this.commandList.addItem(temp[0]);   	               
+    	                	               
     	                templist.put(temp[0],temp);
     	              
     	            }//end of if clause
@@ -400,17 +416,21 @@ public class BurpExtender extends AbstractTableModel  implements IBurpExtender,I
     	    System.out.println ("** Parsing error" + ", line " + err.getLineNumber () + ", uri " + err.getSystemId ());
     	    System.out.println(" " + err.getMessage ());
     	    label4.setText("Parsing error occured");
+    	    return null;
 
     	    }catch (SAXException e) {
     	    Exception x = e.getException ();
     	    ((x == null) ? e : x).printStackTrace ();
     	    label4.setText("Parsing error occured");
+    	    return null;
 
     	    }
     	catch (Throwable t) {
     	    t.printStackTrace ();
     	    label4.setText("Parsing error occured");
+    	    return null;
     	    }
+   
 		System.out.println("size"+templist.size());
     	return templist;
          

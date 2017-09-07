@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -106,12 +107,12 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
             	panel.setLayout(new BorderLayout());
             	insidepanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
             	checkbox.setEnabled(true);
-            	
-            	
-            	
+
             	insidepanel.add(Start);
             	Start.setBounds(900, 100, 120, 30);
+            	Start.setEnabled(false);
             	insidepanel.add(Stop);
+            	
             	Stop.setBounds(900, 100, 120, 30);
             	insidepanel.add(config);
             	config.setBounds(900, 100, 120, 30);
@@ -196,19 +197,19 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
     void stop()
     {
     	 callbacks.removeExtensionStateListener(KaliIntegrator.this); 
-
          callbacks.removeHttpListener(KaliIntegrator.this);
-         
          callbacks.removeContextMenuFactory(KaliIntegrator.this);
+         Start.setEnabled(true);
+         Stop.setEnabled(false);
     }
     
     void start()
     {
         callbacks.registerExtensionStateListener(KaliIntegrator.this); 
-
         callbacks.registerHttpListener(KaliIntegrator.this);
-
         callbacks.registerContextMenuFactory(KaliIntegrator.this);
+        Start.setEnabled(false);
+        Stop.setEnabled(true);
     }
     //
     // implement ITab
