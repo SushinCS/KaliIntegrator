@@ -24,6 +24,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -161,10 +162,18 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 					{
 						HashMap<String, String[]> processedlist = new HashMap<String, String[]>();
 						processedlist = fileobj.processXML();
-						for (String key : processedlist.keySet())
+						if (processedlist != null)
 						{
-							String[] temp = processedlist.get(key);
-							setString(temp[2], temp[3]);
+							for (String key : processedlist.keySet())
+							{
+								String[] temp = processedlist.get(key);
+								setString(temp[2], temp[3]);
+							}
+							JOptionPane.showMessageDialog(null, "Success and Failure String updated");
+						}
+						else
+						{
+							JOptionPane.showMessageDialog(null, "Invalid File");
 						}
 					}
 				});
