@@ -61,8 +61,10 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 	public PrintWriter stdout;
 	public IRequestInfo reqinfoObjk;
 	public IRequestInfo reqinfoObj;
-	public String param = "";
+	public String uparam = "";
 	public String cparam = "";
+	public String bparam = "";
+	public String jparam = "";
 	public String success = "";
 	public String failure = "";
 	public MyRenderer renderer = new MyRenderer();
@@ -328,8 +330,9 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 
 				List<IParameter> eparamlist = reqinfoObj.getParameters();
 				cparam = getrequestparameter(eparamlist, 2);
-				param = getrequestparameter(eparamlist, 0);
-
+				uparam = getrequestparameter(eparamlist, 0);
+				bparam = getrequestparameter(eparamlist, 1);
+				jparam = getrequestparameter(eparamlist, 6);
 				if (eparamlist.size() != 0)
 				{
 					synchronized (this.loghm)
@@ -339,10 +342,12 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 					synchronized (this)
 					{
 						stdout.println("Scanning the Request for Vulnerability:" + this.toolName);
-						output = this.kaliintegrator(reqinfoObj, param, cparam, messageInfo, command);
+						output = this.kaliintegrator(reqinfoObj, uparam, bparam, cparam, jparam, messageInfo, command);
 						callbacks.issueAlert(output);
-						param = "";
+						uparam = "";
 						cparam = "";
+						bparam = "";
+						jparam = "";
 					}
 				}
 				else
@@ -376,6 +381,8 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 		String parameter = "";
 		for (int j = 0; j < temp_paramlist.size(); j++)
 		{
+			System.out.println("Parameter List" + temp_paramlist.get(j).getType() + ":"
+					+ temp_paramlist.get(j).getName());
 
 			if (temp_paramlist.get(j).getType() == type)
 			{
@@ -570,7 +577,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 
 	}
 
-	public String kaliintegrator(IRequestInfo reqinfoObjk, String param2, String cparam,
+	public String kaliintegrator(IRequestInfo reqinfoObjk, String uparam, String bparam, String cparam, String jparam,
 			IHttpRequestResponse messageInfo, String command)
 	{
 		PythonInterpreter interp = new PythonInterpreter();
@@ -581,9 +588,11 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 		String cmd1 = command;
 		stdout.println(cmd1);
 
-		cmd1 = cmd1.replace("POST_PARAMETER", param2);
+		cmd1 = cmd1.replace("POST_PARAMETER", bparam);
 		cmd1 = cmd1.replace("COOKIE_PARAMETER", cparam);
-		cmd1 = cmd1.replace("GET_PARAMETER", reqinfoObjk.getUrl().toString());
+		cmd1 = cmd1.replace("URL", reqinfoObjk.getUrl().toString());
+		cmd1 = cmd1.replace("GET_PARAMETER", uparam);
+		cmd1 = cmd1.replace("JSON_PARAMETER", jparam);
 
 		stdout.println(cmd1);
 
@@ -699,7 +708,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 		@Override
 		public void actionPerformed(ActionEvent arg0)
 		{
-			callbacks.issueAlert("length:logsize" + reqres.length + ":" + log.size());
+
 			MenuItemListener ne = new MenuItemListener(this.invocation1);
 			ne.start();
 

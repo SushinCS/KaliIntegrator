@@ -74,6 +74,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 	public int row = log.size();
 	public FileOperation fileobj = new FileOperation();
 
+	public final HashMap<String, Integer> loghm = new HashMap<String, Integer>();
+
 	/**
 	 * @wbp.parser.entryPoint
 	 */
@@ -293,8 +295,10 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 
 	public void addIntegrator(String name, String command, int row)
 	{
+		name = checkDuplicate(name, command);
 		fimap[threads] = new KaliIntegrator(name, command, this.successStr, this.failureStr);
 		fimap[threads].registerCallbacks(callbacks);
+
 		comnd = new CommandEntry(threads, command);
 		label4.setText("Success!!");
 		log.add(comnd);
@@ -334,6 +338,25 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 			this.commandList.addItem(temp[0]);
 		}
 
+	}
+
+	public String checkDuplicate(String name, String cmd)
+	{
+		if (loghm.size() != 0 && loghm.containsKey(name))
+		{
+
+			Integer n = loghm.get(name);
+			n = n + 1;
+			loghm.put(name, n);
+			name = name + "_" + Integer.toString(n);
+
+		}
+		else
+		{
+			loghm.put(name, 0);
+		}
+
+		return name;
 	}
 
 	public HashMap<String, String[]> processXML(ActionEvent evt)
@@ -435,8 +458,6 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 		System.out.println("size" + templist.size());
 		return templist;
 
-		// System.exit (0);
-
 	}
 
 	public File getfile()
@@ -527,6 +548,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 	{
 
 		CommandEntry commandEntry = (CommandEntry) aValue;
+
 		log.set(rowIndex, commandEntry);
 	}
 
