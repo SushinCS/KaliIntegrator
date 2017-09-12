@@ -14,6 +14,9 @@ import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
@@ -76,6 +79,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 	private final JButton Start = new JButton("Start");
 	private final JButton Stop = new JButton("Stop");
 	private final JButton config = new JButton("Config");
+	private final JButton export = new JButton("Export");
 	public FileOperation fileobj = new FileOperation();
 
 	public KaliIntegrator()
@@ -123,6 +127,8 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 				Stop.setBounds(900, 100, 120, 30);
 				insidepanel.add(config);
 				config.setBounds(900, 100, 120, 30);
+				insidepanel.add(export);
+				export.setBounds(900, 100, 120, 30);
 				insidepanel.add(checkboxlabel);
 				insidepanel.add(checkbox);
 				checkbox.setSelected(true);
@@ -180,6 +186,21 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 					}
 				});
 
+				export.addActionListener(new ActionListener()
+				{
+					public void actionPerformed(ActionEvent e)
+					{
+						try
+						{
+							exportTable();
+						}
+						catch (IOException e1)
+						{
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+					}
+				});
 				splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 
 				// table of log entries
@@ -638,6 +659,29 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 		return output.asString();
 	}
 
+	public void exportTable() throws IOException
+	{
+		File file = fileobj.getfile();
+
+		FileWriter out = new FileWriter(file);
+		for (int i = 0; i < this.getColumnCount(); i++)
+		{
+			out.write(this.getColumnName(i) + "\t");
+		}
+		out.write("\n");
+
+		for (int i = 0; i < this.getRowCount(); i++)
+		{
+			for (int j = 0; j < this.getColumnCount(); j++)
+			{
+				out.write(this.getValueAt(i, j).toString() + "\t");
+			}
+			out.write("\n");
+		}
+
+		out.close();
+
+	}
 	//
 	// class to hold details of each log entry
 	//
@@ -681,9 +725,9 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 	{
 
 		if (this.toolName != "default"
-				&& ((invocation.getInvocationContext() == invocation.CONTEXT_TARGET_SITE_MAP_TREE)
-						|| (invocation.getInvocationContext() == invocation.CONTEXT_TARGET_SITE_MAP_TABLE)
-						|| (invocation.getInvocationContext() == invocation.CONTEXT_PROXY_HISTORY)))
+				&& ((invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TREE)
+						|| (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TABLE)
+						|| (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_PROXY_HISTORY)))
 		{
 
 			JMenuItem menu = new JMenuItem("Send to " + this.toolName);

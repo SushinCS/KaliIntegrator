@@ -122,11 +122,13 @@ public class FileOperation
 		File selectedFile = null;
 		fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
 		int result = fileChooser.showOpenDialog(null);
+		fileChooser.setDialogTitle("Select the file");
 		if (result == JFileChooser.APPROVE_OPTION)
 		{
 			selectedFile = fileChooser.getSelectedFile();
 		}
 		return selectedFile;
+
 	}
 
 }

@@ -135,7 +135,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 		panel.add(label5);
 
 		panel.add(Remove);
-		Remove.setBounds(711, 493, 117, 30);
+		Remove.setBounds(741, 495, 117, 30);
 
 		JScrollPane scrollPane = new JScrollPane(logTable);
 		logTable.setAutoCreateRowSorter(true);
@@ -148,7 +148,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 		logTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		logTable.getColumnModel().getColumn(0).setPreferredWidth(60);
 		logTable.getColumnModel().getColumn(1).setPreferredWidth(800);
-		scrollPane.setBounds(12, 378, 680, 251);
+		scrollPane.setBounds(12, 378, 716, 251);
 		panel.add(scrollPane);
 
 		SwingUtilities.invokeLater(new Runnable()
@@ -498,7 +498,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 	@Override
 	public int getColumnCount()
 	{
-		return 2;
+		return 3;
 	}
 
 	@Override
