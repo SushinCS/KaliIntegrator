@@ -434,24 +434,21 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 		}
 		catch (SAXParseException err)
 		{
-			System.out.println("** Parsing error" + ", line " + err.getLineNumber() + ", uri " + err.getSystemId());
-			System.out.println(" " + err.getMessage());
+
 			label4.setText("Parsing error occured");
 			return null;
 
 		}
 		catch (SAXException e)
 		{
-			Exception x = e.getException();
-			((x == null) ? e : x).printStackTrace();
+
 			label4.setText("Parsing error occured");
 			return null;
 
 		}
 		catch (Throwable t)
 		{
-			t.printStackTrace();
-			label4.setText("Parsing error occured");
+
 			return null;
 		}
 

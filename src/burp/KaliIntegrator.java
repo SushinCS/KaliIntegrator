@@ -291,6 +291,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 				LogEntry beforeProcessing = new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), helpers.analyzeRequest(messageInfo), toolFlag, output, parameterList);
 				log.add(beforeProcessing);
 				fireTableRowsInserted(row, row);
+
 			}
 			reqinfoObj = helpers.analyzeRequest(messageInfo);
 
@@ -304,8 +305,14 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 				synchronized (this.loghm)
 				{
 					List<String> temp = this.paramlist(reqinfoObj);
-					if (loghm.get(reqinfoObj.getUrl()) != null && (temp.containsAll(loghm.get(reqinfoObj.getUrl())))
-							&& (temp.size() != 0))
+					if (temp.isEmpty())
+					{
+						output = "Cannot Be tested for Vulnerability";
+						messageInfo.setComment("Cannot Be tested for Vulnerability");
+
+					}
+					else if (loghm.get(reqinfoObj.getUrl()) != null
+							&& (temp.containsAll(loghm.get(reqinfoObj.getUrl()))) && (temp.size() != 0))
 					{
 
 						uniqueFlag = 1;
@@ -314,13 +321,15 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 					}
 					else if (temp.size() != 0)
 					{
-						output = "Cannot Be tested for LFI Vulnerability";
-						messageInfo.setComment("Cannot Be tested for LFI Vulnerability");
+						output = "Cannot Be tested for Vulnerability";
+						messageInfo.setComment("Cannot Be tested for Vulnerability");
+
 					}
 					else
 					{
 						callbacks.issueAlert("Unique link");
 						uniqueFlag = 0;
+
 					}
 				}
 			}
@@ -348,18 +357,21 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 						cparam = "";
 						bparam = "";
 						jparam = "";
+
 					}
 				}
 				else
 				{
-					output = "Cannot Be tested for LFI Vulnerability";
-					messageInfo.setComment("Cannot Be tested for LFI Vulnerability");
+					output = "Cannot Be tested for Vulnerability";
+					messageInfo.setComment("Cannot Be tested for Vulnerability");
+
 				}
 			}
 			else
 			{
 				messageInfo.setComment("Duplicate Link/Already Tested");
 				output = "Duplicate Link/Already Tested";
+				System.out.println("URL:Message_9" + reqinfoObj.getUrl().toString() + ":" + messageInfo.getComment());
 			}
 			stdout.println("\n\n");
 			synchronized (this.log)
@@ -367,6 +379,9 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 
 				LogEntry afterProcessing = new LogEntry(row, callbacks.saveBuffersToTempFiles(messageInfo), helpers.analyzeRequest(messageInfo), toolFlag, output, parameterList);
 				loghm.put(reqinfoObj.getUrl(), parameterList);
+				// System.out.println("asasURL aaaa:" + reqinfoObj.getUrl() +
+				// ":::" + messageInfo.getComment());
+				System.out.println("URL:Message_10" + reqinfoObj.getUrl().toString() + ":" + messageInfo.getComment());
 				this.setValueAt(afterProcessing, row, row);
 				fireTableRowsUpdated(row, row);
 			}
@@ -381,8 +396,9 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 		String parameter = "";
 		for (int j = 0; j < temp_paramlist.size(); j++)
 		{
-			System.out.println("Parameter List" + temp_paramlist.get(j).getType() + ":"
-					+ temp_paramlist.get(j).getName());
+			// System.out.println("Parameter List" +
+			// temp_paramlist.get(j).getType() + ":"
+			// + temp_paramlist.get(j).getName());
 
 			if (temp_paramlist.get(j).getType() == type)
 			{
@@ -472,6 +488,8 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 		case 2:
 			return logEntry.method;
 		case 3:
+			// System.out.println("Url:Status:" + logEntry.url.toString() + " :
+			// " + logEntry.status);
 			return logEntry.status;
 		case 4:
 			return callbacks.getToolName(logEntry.tool);
@@ -642,7 +660,14 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 			this.requestResponse = requestResponse;
 			this.url = ereqinfoobj.getUrl();
 			this.method = ereqinfoobj.getMethod();
-			this.status = requestResponse.getComment();
+			if (requestResponse.getComment() == null)
+			{
+				this.status = "Cannotbe tested for Vulnerability";
+			}
+			else
+			{
+				this.status = requestResponse.getComment();
+			}
 			this.voutput = output;
 			this.paramlist = paramlist;
 
@@ -655,12 +680,17 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 	public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation)
 	{
 
-		if (this.toolName != "default")
+		if (this.toolName != "default"
+				&& ((invocation.getInvocationContext() == invocation.CONTEXT_TARGET_SITE_MAP_TREE)
+						|| (invocation.getInvocationContext() == invocation.CONTEXT_TARGET_SITE_MAP_TABLE)
+						|| (invocation.getInvocationContext() == invocation.CONTEXT_PROXY_HISTORY)))
 		{
+
 			JMenuItem menu = new JMenuItem("Send to " + this.toolName);
 			menu.addActionListener(new MenuItemListener(invocation));
 			List<JMenuItem> item = new ArrayList<JMenuItem>();
 			item.add(menu);
+
 			return item;
 		}
 		else
@@ -689,7 +719,6 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 				String host = temp.getUrl().getProtocol() + "://" + temp.getUrl().getHost();
 				callbacks.issueAlert(host);
 				this.reqres = callbacks.getSiteMap(host);
-
 			}
 			this.flag = this.invocation1.getToolFlag();
 		}
