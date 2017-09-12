@@ -299,7 +299,7 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 		fimap[threads] = new KaliIntegrator(name, command, this.successStr, this.failureStr);
 		fimap[threads].registerCallbacks(callbacks);
 
-		comnd = new CommandEntry(threads, command);
+		comnd = new CommandEntry(threads, command, name);
 		label4.setText("Success!!");
 		log.add(comnd);
 		tab.addTab(fimap[threads].toolName, fimap[threads].getUiComponent());
@@ -509,6 +509,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 		case 0:
 			return "Slno";
 		case 1:
+			return "Name";
+		case 2:
 			return "Command";
 
 		default:
@@ -533,6 +535,8 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 		case 0:
 			return rowIndex + 1;
 		case 1:
+			return commandEntry.name;
+		case 2:
 			return commandEntry.command;
 
 		default:
@@ -553,11 +557,13 @@ public class BurpExtender extends AbstractTableModel implements IBurpExtender, I
 	{
 		final int slno;
 		final String command;
+		final String name;
 
-		CommandEntry(int sl, String command)
+		CommandEntry(int sl, String command, String name)
 		{
 			this.slno = sl;
 			this.command = command;
+			this.name = name;
 
 		}
 
