@@ -678,7 +678,7 @@ public class KaliIntegrator extends AbstractTableModel implements IContextMenuFa
 			}
 			out.write("\n");
 		}
-
+		JOptionPane.showMessageDialog(null, "Data exported Successfully to loacation" + file.getAbsolutePath());
 		out.close();
 
 	}
